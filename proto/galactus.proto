@@ -2,13 +2,12 @@ syntax = "proto3";
 
 package galactus;
 
-message Task {
-  string id = 1;
-  string command = 2;
-  map<string, string> parameters = 3;
-  int32 priority = 4;
-  int64 deadline_ms = 5;
-}
+import "google/protobuf/struct.proto";
+
+message Empty {}
+
+// Workers ___________________________________________________
+// Workers are the entities that execute tasks.
 
 // Uniquely identifies a worker for the duration of its lifetime
 message WorkerID {
@@ -28,10 +27,39 @@ message WorkerStatus {
     WorkerID worker_id = 1;
     // The tasks the worker is currently running
     repeated TaskID tasks = 2;
+    // The worker's current capacity
+    int32 available_slots = 3;
+    // Whether the worker is accepting new tasks
+    bool accepting_tasks = 4;
 }
 
+// Tasks ___________________________________________________
+// Task data is passed between Galactus and the workers to
+// coordinate task execution and return results.
+
+// A unique identifier for a task
 message TaskID {
-    bytes task_uiid = 1;
+    bytes task_uuid = 1;
+}
+
+
+// The status of a task
+enum TaskStatus {
+    NOT_STARTED = 0;
+    IN_PROGRESS = 1;
+    COMPLETED = 2;
+    FAILED = 3;
+}
+
+
+// Task Execution -----
+
+// Data passed into the task function
+message TaskExecutionData {
+    // The command to execute
+    string task_command = 1;
+    // Arbitrary data passed into the task function
+    google.protobuf.Struct task_data = 2;
 }
 
 // A task assigned to a worker
@@ -41,15 +69,61 @@ message TaskAssignment {
     // The task's priority. If higher than currently running tasks, the worker will
     // interrupt the lower priority tasks to run this one.
     int32 priority = 2;
+    // Data passed into the task function
+    TaskExecutionData task_data = 3;
 }
+
+
+// Task Results -----
+
+// Data returned from the task function
+message TaskResultData {
+    // Arbitrary data returned from the task function
+    google.protobuf.Struct task_data = 1;
+}
+
+// Data returned from the task function if the task failed
+message TaskErrorData {
+    // The error can be arbitrary data. Ideally we should have ways of
+    // serializing the error into some format. TODO
+    google.protobuf.Struct task_error = 1;
+}
+
+// Result of a finalized task, including its status and result or error
+message TaskResult {
+    // The task's ID
+    TaskID task_id = 1;
+    // The task's status
+    TaskStatus status = 2;
+    // The task's result or error
+    oneof result {
+        TaskResultData task_result = 3;
+        TaskErrorData task_error = 4;
+    }
+}
+
+// Task Status Tracking
+
+// The status of a task
+message TaskStatusUpdate {
+    // The task's ID
+    TaskID task_id = 1;
+    // The task's status
+    TaskStatus status = 2;
+}
+
+// Galactus ___________________________________________________
+// Galactus is the entity that coordinates task execution across workers.
 
 service GalactusService {
   // Worker registration and task polling
-  rpc UpdateWorker(WorkerCapacity) returns (Empty);
-  rpc RemoveWorker(WorkerCapacity) returns (Empty);
+  rpc RegisterWorker(WorkerMetadata) returns (Empty);
+  rpc UnregisterWorker(WorkerID) returns (Empty);
 
-  // Report task completion
+  // Poll for tasks
+  rpc StreamTasks(stream WorkerStatus) returns (stream TaskAssignment);
+
+  // Report task status and result
+  rpc ReportTaskStatus(TaskStatusUpdate) returns (Empty);
   rpc ReportTaskResult(TaskResult) returns (Empty);
 }
-
-message Empty {}
