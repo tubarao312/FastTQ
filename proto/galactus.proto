@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package galactus;
+
+message Task {
+  string id = 1;
+  string command = 2;
+  map<string, string> parameters = 3;
+  int32 priority = 4;
+  int64 deadline_ms = 5;
+}
+
+// Uniquely identifies a worker for the duration of its lifetime
+message WorkerID {
+    bytes worker_uuid = 1;
+}
+
+// Metadata about a worker
+message WorkerMetadata {
+    WorkerID worker_id = 1;
+    repeated string supported_commands = 2;
+    int32 max_slots = 3;
+}
+
+// Status of a worker
+message WorkerStatus {
+    // The worker's ID
+    WorkerID worker_id = 1;
+    // The tasks the worker is currently running
+    repeated TaskID tasks = 2;
+}
+
+message TaskID {
+    bytes task_uiid = 1;
+}
+
+// A task assigned to a worker
+message TaskAssignment {
+    // The task's ID
+    TaskID task_id = 1;
+    // The task's priority. If higher than currently running tasks, the worker will
+    // interrupt the lower priority tasks to run this one.
+    int32 priority = 2;
+}
+
+service GalactusService {
+  // Worker registration and task polling
+  rpc UpdateWorker(WorkerCapacity) returns (Empty);
+  rpc RemoveWorker(WorkerCapacity) returns (Empty);
+
+  // Report task completion
+  rpc ReportTaskResult(TaskResult) returns (Empty);
+}
+
+message Empty {}

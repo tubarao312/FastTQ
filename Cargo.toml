@@ -1,0 +1,7 @@
+# NOTE - This Cargo.toml file is used for declaring the workspace
+# so that the `rust-analyzer` extension can pick up all the workspace
+# members and provide auto-completion etc. without having to open
+# individual folders exclusively.
+[workspace]
+
+members = ["server/services/galactus"]
