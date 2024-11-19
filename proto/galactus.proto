@@ -35,7 +35,7 @@ message WorkerStatus {
 
 // Tasks ___________________________________________________
 // Task data is passed between Galactus and the workers to
-// coordinate task execution and return results.
+// coordinate task execution and return results
 
 // A unique identifier for a task
 message TaskID {
