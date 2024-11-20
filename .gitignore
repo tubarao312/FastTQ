@@ -1,2 +1,9 @@
 **/target/
 **/node_modules/
+
+# Python related files
+.venv
+
+# General files
+.env
+.env.local
