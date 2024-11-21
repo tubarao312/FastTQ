@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-pub trait QueueBroker<T> {
-    async fn connect(&self) -> Result<Arc<T>, Box<dyn std::error::Error>>;
+pub trait BaseBroker<T> {
+    async fn connect(&self, uri: String) -> Result<Arc<T>, Box<dyn std::error::Error>>;
     async fn register_queue(
         &self,
         conn: Arc<T>,

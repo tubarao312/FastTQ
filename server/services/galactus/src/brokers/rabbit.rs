@@ -1,13 +1,12 @@
-use crate::brokers::queue::QueueBroker;
+use crate::brokers::base::BaseBroker;
 use lapin::{options::*, types::FieldTable, BasicProperties, Connection, ConnectionProperties};
 use std::sync::Arc;
 
 pub struct RabbitBroker;
 
-impl QueueBroker<Connection> for RabbitBroker {
-    async fn connect(&self) -> Result<Arc<Connection>, Box<dyn std::error::Error>> {
-        let addr = std::env::var("AMQP_ADDR")?;
-        let conn = Connection::connect(&addr, ConnectionProperties::default()).await?;
+impl BaseBroker<Connection> for RabbitBroker {
+    async fn connect(&self, uri: String) -> Result<Arc<Connection>, Box<dyn std::error::Error>> {
+        let conn = Connection::connect(&uri, ConnectionProperties::default()).await?;
 
         // Change to loggin in the future
         println!("Connected to RabbitMQ!");
