@@ -1,0 +1,13 @@
+[package]
+name = "proto_generation"
+version = "0.1.0"
+edition = "2021"
+description = "Generate protobufs for the server"
+
+[dependencies]
+# protobuf = "3.7.1" # This will be needed to use the generated code as protobuf messages
+
+[build-dependencies]
+pb-jelly = "0.0.17"
+pb-jelly-gen = "0.0.17"
+protoc = "2.28.0"
