@@ -16,7 +16,7 @@ impl Config {
         load_env();
 
         Config {
-            broker_addr: std::env::var("BROKER_ADDR").unwrap(),
+            broker_addr: std::env::var("FASTTQ_BROKER_ADDR").unwrap(),
         }
     }
 
