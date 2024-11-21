@@ -888,6 +888,7 @@ dependencies = [
 name = "galactus"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "dotenv",
  "futures",
  "lapin",

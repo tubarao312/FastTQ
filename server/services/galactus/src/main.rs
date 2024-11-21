@@ -1,8 +1,7 @@
 mod brokers;
 mod config;
 
-use crate::brokers::base::BaseBroker;
-use brokers::rabbit;
+use brokers::create_broker_connection;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -10,12 +9,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let addr = std::env::var("FASTTQ_BROKER_ADDR")?;
 
-    let rabbit = rabbit::RabbitBroker;
-    let conn = rabbit.connect(addr).await?;
+    let broker = create_broker_connection(addr).await?;
 
-    rabbit.register_queue(conn.clone(), "test_queue").await?;
-    rabbit
-        .publish_message(conn.clone(), "", "test_queue", b"Hello, RabbitMQ!")
+    broker.register_queue("test_queue").await?;
+    broker
+        .publish_message("", "test_queue", b"Hello, RabbitMQ!")
         .await?;
 
     Ok(())

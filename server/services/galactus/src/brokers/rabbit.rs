@@ -1,25 +1,26 @@
 use crate::brokers::base::BaseBroker;
+use async_trait::async_trait;
 use lapin::{options::*, types::FieldTable, BasicProperties, Connection, ConnectionProperties};
 use std::sync::Arc;
 
-pub struct RabbitBroker;
+pub struct RabbitBroker {
+    connection: Arc<Connection>,
+}
 
-impl BaseBroker<Connection> for RabbitBroker {
-    async fn connect(&self, uri: String) -> Result<Arc<Connection>, Box<dyn std::error::Error>> {
-        let conn = Connection::connect(&uri, ConnectionProperties::default()).await?;
+impl RabbitBroker {
+    pub async fn new(uri: &str) -> Result<RabbitBroker, Box<dyn std::error::Error>> {
+        let connection = Connection::connect(uri, ConnectionProperties::default()).await?;
 
-        // Change to loggin in the future
-        println!("Connected to RabbitMQ!");
-
-        Ok(Arc::new(conn))
+        Ok(RabbitBroker {
+            connection: Arc::new(connection),
+        })
     }
+}
 
-    async fn register_queue(
-        &self,
-        conn: Arc<Connection>,
-        queue_name: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let channel = conn.create_channel().await?;
+#[async_trait]
+impl BaseBroker for RabbitBroker {
+    async fn register_queue(&self, queue_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let channel = self.connection.create_channel().await?;
         channel
             .queue_declare(
                 queue_name,
@@ -33,12 +34,11 @@ impl BaseBroker<Connection> for RabbitBroker {
 
     async fn publish_message(
         &self,
-        conn: Arc<Connection>,
         exchange: &str,
         routing_key: &str,
         payload: &[u8],
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let channel = conn.create_channel().await?;
+        let channel = self.connection.create_channel().await?;
         channel
             .basic_publish(
                 exchange,
