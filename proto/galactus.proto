@@ -17,7 +17,7 @@ message WorkerID {
 // Metadata about a worker
 message WorkerMetadata {
     WorkerID worker_id = 1;
-    repeated string supported_commands = 2;
+    repeated string supported_task_types = 2;
     int32 max_slots = 3;
 }
 
@@ -31,6 +31,14 @@ message WorkerStatus {
     int32 available_slots = 3;
     // Whether the worker is accepting new tasks
     bool accepting_tasks = 4;
+}
+
+// Message sent from workers to Galactus when they register
+message WorkerRegistration {
+    // The worker's metadata
+    WorkerMetadata worker_metadata = 1;
+    // The worker's status
+    WorkerStatus worker_status = 2;
 }
 
 // Tasks ___________________________________________________
@@ -90,26 +98,39 @@ message TaskErrorData {
 }
 
 // Result of a finalized task, including its status and result or error
-message TaskResult {
+message TaskUpdate {
     // The task's ID
     TaskID task_id = 1;
     // The task's status
     TaskStatus status = 2;
+    // The worker's status
+    WorkerStatus worker_status = 3;
     // The task's result or error
     oneof result {
         TaskResultData task_result = 3;
         TaskErrorData task_error = 4;
+        Empty task_cancelled = 5;
+    }
+    
+}
+
+// Message sent from workers to Galactus
+message WorkerMessage {
+    // The worker's ID
+    WorkerID worker_id = 1;
+    // The message
+    oneof message {
+        WorkerRegistration worker_registration = 1; // Sent when the worker first registers so the manager knows what it can do
+        TaskUpdate task_update = 2; // Sent when the worker has an update on a task
     }
 }
 
-// Task Status Tracking
-
-// The status of a task
-message TaskStatusUpdate {
-    // The task's ID
-    TaskID task_id = 1;
-    // The task's status
-    TaskStatus status = 2;
+// Message sent from Galactus to workers
+message GalactusWorkerMessage {
+    // The message being sent
+    oneof message {
+        TaskAssignment task_assignment = 1;
+    }
 }
 
 // Galactus ___________________________________________________
@@ -117,13 +138,9 @@ message TaskStatusUpdate {
 
 service GalactusService {
   // Worker registration and task polling
-  rpc RegisterWorker(WorkerMetadata) returns (Empty);
-  rpc UnregisterWorker(WorkerID) returns (Empty);
+  rpc WorkerConnection(stream WorkerMessage) returns (stream WorkerMessage);
 
-  // Poll for tasks
-  rpc StreamTasks(stream WorkerStatus) returns (stream TaskAssignment);
-
-  // Report task status and result
-  rpc ReportTaskStatus(TaskStatusUpdate) returns (Empty);
-  rpc ReportTaskResult(TaskResult) returns (Empty);
+  // Publish a task to be executed by a worker
+  // rpc PublishTask(TaskAssignment) returns (TaskID);
+  // rpc GetTaskResult(TaskID) returns (TaskResult);
 }
