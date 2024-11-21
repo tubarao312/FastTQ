@@ -9,13 +9,11 @@ use redis::RedisBroker;
 pub async fn create_broker_connection(
     uri: String,
 ) -> Result<Box<dyn BaseBroker>, Box<dyn std::error::Error>> {
-    if uri.starts_with("amqp") {
-        let broker = RabbitBroker::new(&uri).await?;
-        Ok(Box::new(broker))
-    } else if uri.starts_with("redis") {
-        let broker = RedisBroker::new(&uri).await?;
-        Ok(Box::new(broker))
-    } else {
-        Err("Unsupported broker URI".into())
+    let prefix = uri.split(":").collect::<Vec<&str>>()[0];
+
+    match prefix {
+        "redis" => Ok(Box::new(RedisBroker::new(&uri).await?)),
+        "amqp" => Ok(Box::new(RabbitBroker::new(&uri).await?)),
+        _ => Err("Invalid broker URI".into()),
     }
 }
