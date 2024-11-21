@@ -10,9 +10,7 @@ dotenv = "0.15.0"
 futures = "0.3.31"
 lapin = "2.5.0"
 redis = { version = "0.27.5", features = ["tokio-comp"] }
-tokio = { version = "1.41.1", features = ["full"] }
-tonic = "0.12.3"
 tracing = "0.1.40"
+tokio = { version = "1.41.1", features = ["full"] }
 
 [build-dependencies]
-tonic-build = "0.12.3"
