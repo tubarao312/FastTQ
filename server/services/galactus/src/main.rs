@@ -1,17 +1,40 @@
+mod api;
 mod brokers;
 mod config;
 
-use brokers::create_broker_connection;
+use config::Config;
+use tokio::net::TcpListener;
+
+use axum::{serve, Router};
+
+use common::db::DatabasePools;
+
+/// Represents the shared application state that can be accessed by all routes
+///
+/// Contains database connection pools for read and write operations
+#[derive(Clone)]
+pub struct AppState {
+    pub db_pools: DatabasePools,
+}
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let config = config::Config::new();
-    let broker = create_broker_connection(config.broker_addr().to_string()).await?;
+async fn main() {
+    let config = Config::new();
 
-    broker.register_queue("test_queue").await?;
-    broker
-        .publish_message("", "test_queue", b"Hello, RabbitMQ!")
-        .await?;
+    // Setup the database pools
+    let db_pools = DatabasePools::new(&config.db_reader_url, &config.db_writer_url)
+        .await
+        .unwrap();
 
-    Ok(())
+    // Setup the app state
+    let app_state = AppState { db_pools };
+
+    // Setup the router
+    let app = Router::new().merge(api::routes()).with_state(app_state);
+
+    // Setup the listener and bind to the port
+    let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
+
+    // Serve the app
+    serve(listener, app.into_make_service()).await.unwrap();
 }

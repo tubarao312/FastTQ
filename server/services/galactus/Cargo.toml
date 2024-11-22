@@ -5,6 +5,7 @@ edition = "2021"
 description = "Galactus is a monolithic service that handles communication with the database, distributing tasks among workers, and communicating with the database."
 
 [dependencies]
+common = { path = "../../libs/common" }
 async-trait = "0.1.83"
 dotenv = "0.15.0"
 futures = "0.3.31"
@@ -12,5 +13,10 @@ lapin = "2.5.0"
 redis = { version = "0.27.5", features = ["tokio-comp"] }
 tracing = "0.1.40"
 tokio = { version = "1.41.1", features = ["full"] }
+axum = "0.7.9"
+serde_json = "1.0.133"
+serde = "1.0.215"
+uuid = { version = "1.11.0", features = ["serde", "v4"] }
+sqlx = { version = "0.8.2", features = ["runtime-tokio", "postgres", "uuid", "json"] }
 
 [build-dependencies]

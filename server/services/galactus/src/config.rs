@@ -1,7 +1,9 @@
 use dotenv::dotenv;
 
 pub struct Config {
-    broker_addr: String,
+    pub broker_addr: String,
+    pub db_reader_url: String,
+    pub db_writer_url: String,
 }
 
 fn load_env() {
@@ -17,10 +19,8 @@ impl Config {
 
         Config {
             broker_addr: std::env::var("FASTTQ_BROKER_ADDR").unwrap(),
+            db_reader_url: std::env::var("DATABASE_READER_URL").unwrap(),
+            db_writer_url: std::env::var("DATABASE_WRITER_URL").unwrap(),
         }
-    }
-
-    pub fn broker_addr(&self) -> &str {
-        &self.broker_addr
     }
 }
