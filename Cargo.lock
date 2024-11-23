@@ -505,7 +505,8 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
- "time",
+ "sqlx",
+ "strum_macros",
  "uuid",
 ]
 
@@ -964,7 +965,6 @@ dependencies = [
  "futures",
  "lapin",
  "redis",
- "serde",
  "serde_json",
  "sqlx",
  "tokio",
@@ -2511,6 +2511,19 @@ dependencies = [
  "unicode-bidi",
  "unicode-normalization",
  "unicode-properties",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.26.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c6bee85a5a24955dc440386795aa378cd9cf82acd5f764469152d2270e581be"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn",
 ]
 
 [[package]]

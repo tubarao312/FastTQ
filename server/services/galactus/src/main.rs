@@ -1,13 +1,14 @@
 mod api;
 mod brokers;
 mod config;
+mod repo;
 
 use config::Config;
 use tokio::net::TcpListener;
 
 use axum::{serve, Router};
 
-use common::db::DatabasePools;
+use db_common::db::DatabasePools;
 
 /// Represents the shared application state that can be accessed by all routes
 ///

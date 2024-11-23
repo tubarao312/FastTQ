@@ -28,9 +28,7 @@ async fn get_task_by_id(
     Path(id): Path<Uuid>,
     State(AppState { db_pools }): State<AppState>,
 ) -> Result<Json<Task>, StatusCode> {
-    let task = Task::new("test".to_string(), serde_json::Value::Null, Some(id));
-
-    Ok(Json(task))
+    todo!("Implement me")
 }
 
 /// Create a new task
@@ -44,9 +42,7 @@ async fn create_task(
     State(AppState { db_pools }): State<AppState>,
     Json(task): Json<Task>,
 ) -> Result<Json<Task>, StatusCode> {
-    let task = Task::new(task.name, task.data, None);
-
-    Ok(Json(task))
+    todo!("Implement me")
 }
 
 /// Update the status of a task
@@ -60,9 +56,5 @@ async fn update_task_status(
     Path(id): Path<Uuid>,
     State(AppState { db_pools }): State<AppState>,
 ) -> Result<Json<Task>, StatusCode> {
-    Ok(Json(Task::new(
-        "test".to_string(),
-        serde_json::Value::Null,
-        Some(id),
-    )))
+    todo!("Implement me")
 }
