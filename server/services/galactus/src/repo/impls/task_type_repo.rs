@@ -75,7 +75,7 @@ mod tests {
 
     /// Creates a task type and then retrieves it by id
     #[sqlx::test(migrator = "db_common::MIGRATOR")]
-    async fn task_type(pool: PgPool) {
+    async fn create_and_retrieve_task_type(pool: PgPool) {
         let repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
 
         let task_type = TaskType {

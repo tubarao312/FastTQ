@@ -284,7 +284,7 @@ mod tests {
 
     /// Creates a task and then uploads a result and an error
     #[sqlx::test(migrator = "db_common::MIGRATOR")]
-    async fn task_results(pool: PgPool) {
+    async fn create_task_and_then_upload_error(pool: PgPool) {
         let core = PgRepositoryCore::new(pool.clone());
         let repo = PgTaskRepository::new(core.clone());
         let task_type_repo = PgTaskTypeRepository::new(core.clone());
@@ -338,9 +338,9 @@ mod tests {
         assert_eq!(results[0].id, result.id);
     }
 
-    /// Creates a task and then updates its status (should be allowed)
+    /// Tests that a task's status can be updated after creation
     #[sqlx::test(migrator = "db_common::MIGRATOR")]
-    async fn update_status(pool: PgPool) {
+    async fn test_task_status_update(pool: PgPool) {
         let repo = PgTaskRepository::new(PgRepositoryCore::new(pool.clone()));
         let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
 
