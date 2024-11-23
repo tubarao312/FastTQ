@@ -14,6 +14,7 @@ CREATE TABLE task_types (
 CREATE TABLE workers (
     id UUID PRIMARY KEY,
     name TEXT NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
     registered_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
@@ -36,6 +37,7 @@ CREATE TABLE worker_heartbeats (
 -- Tasks --------------------------------------------------------------------------
 
 -- Task status enum
+-- NOTE: This is currently not used because it's not easy to integrate with sqlx. Will come back to it.
 CREATE TYPE task_status AS ENUM (
     'pending',    -- Task is created but not yet assigned
     'queued',     -- Task has been assigned to a worker and sent to a queue
@@ -50,7 +52,7 @@ CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     task_type_id UUID NOT NULL REFERENCES task_types(id),
     input_data JSONB,
-    status task_status NOT NULL DEFAULT 'pending',
+    status TEXT NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     assigned_to UUID REFERENCES workers(id)
 );
@@ -61,7 +63,6 @@ CREATE TABLE task_results (
     task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
     output_data JSONB,
     error_data JSONB,
-    completed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     worker_id UUID NOT NULL REFERENCES workers(id),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
