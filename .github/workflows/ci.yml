@@ -31,6 +31,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
+      - name: Run migrations
+        run: sqlx migrate run
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
       - run: cargo test --all-features
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
