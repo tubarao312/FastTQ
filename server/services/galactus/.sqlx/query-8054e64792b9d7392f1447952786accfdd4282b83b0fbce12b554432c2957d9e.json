@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO task_types (id, name)\n            VALUES ($1, $2)\n            ON CONFLICT (id) DO UPDATE SET name = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8054e64792b9d7392f1447952786accfdd4282b83b0fbce12b554432c2957d9e"
+}

@@ -1,5 +1,6 @@
 volumes:
   rabbitmq_data: {}
+  postgres_data: {}
 
 services:
   rabbitmq:
@@ -12,3 +13,13 @@ services:
       RABBITMQ_DEFAULT_PASS: password
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: fasttq
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data

@@ -1,0 +1,28 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT tt.id, tt.name \n            FROM task_types tt\n            JOIN worker_task_types wtt ON wtt.task_type_id = tt.id\n            WHERE wtt.worker_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "name",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "e6a8c4718410e2e32224cafa6c71a5804961463a833d19bc7bc125b1dd34fbfc"
+}
