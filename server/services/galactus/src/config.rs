@@ -19,8 +19,8 @@ impl Config {
 
         Config {
             broker_addr: std::env::var("FASTTQ_BROKER_ADDR").unwrap(),
-            db_reader_url: std::env::var("DATABASE_READER_URL").unwrap(),
-            db_writer_url: std::env::var("DATABASE_WRITER_URL").unwrap(),
+            db_reader_url: std::env::var("FASTTQ_DATABASE_READER_URL").unwrap(),
+            db_writer_url: std::env::var("FASTTQ_DATABASE_WRITER_URL").unwrap(),
         }
     }
 }

@@ -7,3 +7,4 @@
 # General files
 .env
 .env.local
+.env.docker
