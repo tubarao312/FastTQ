@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO worker_task_types (worker_id, task_type_id)\n                VALUES ($1, $2)\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "38a90a479361aef7c63bce9a077a7c62d11115721c8b5dbb792c1df26752c2b5"
+}

@@ -119,7 +119,7 @@ impl TaskRepository for PgTaskRepository {
             .map(|row| TaskResult {
                 id: row.id,
                 task_id: row.task_id,
-                worker_id: row.worker_id.unwrap(),
+                worker_id: row.worker_id,
                 output_data: row.output_data,
                 created_at: row.created_at.into(),
                 error_data: row.error_data,
@@ -187,7 +187,7 @@ impl TaskRepository for PgTaskRepository {
         Ok(TaskResult {
             id: result.id,
             task_id: result.task_id,
-            worker_id: result.worker_id.unwrap(),
+            worker_id: result.worker_id,
             output_data: result.output_data,
             error_data: result.error_data,
             created_at: result.created_at.into(),
@@ -233,7 +233,7 @@ impl TaskRepository for PgTaskRepository {
         Ok(TaskResult {
             id: result.id,
             task_id: result.task_id,
-            worker_id: result.worker_id.unwrap(),
+            worker_id: result.worker_id,
             output_data: result.output_data,
             error_data: result.error_data,
             created_at: result.created_at.into(),
