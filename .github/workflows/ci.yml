@@ -38,6 +38,7 @@ jobs:
       - name: Create test database
         run: sqlx database create
       - name: Run migrations
-        run: sqlx migrate run --source ./server/libs/db_common/migrations
+        run: sqlx migrate run --source ./server/libs/db-common/migrations
       - run: cargo test --all-features
+
 
