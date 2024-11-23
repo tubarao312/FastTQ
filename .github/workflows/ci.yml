@@ -12,6 +12,8 @@ jobs:
   test:
     name: cargo test
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
 
     services:
       postgres:
@@ -33,11 +35,9 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Install sqlx-cli
         run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
+      - name: Create test database
+        run: sqlx database create
       - name: Run migrations
-        run: sqlx migrate run
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+        run: sqlx migrate run --source ./server/libs/db_common/migrations
       - run: cargo test --all-features
-        env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
 
