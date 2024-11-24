@@ -3,6 +3,18 @@ volumes:
   postgres_data: {}
 
 services:
+  fasttq:
+    build: 
+      context: .
+      dockerfile: server/services/galactus/Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - rabbitmq
+      - postgres
+    env_file:
+      - server/services/galactus/.env.docker
+
   rabbitmq:
     image: rabbitmq:4-management
     ports:
