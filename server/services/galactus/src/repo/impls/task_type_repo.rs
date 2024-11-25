@@ -70,8 +70,16 @@ impl TaskTypeRepository for PgTaskTypeRepository {
 
 #[cfg(test)]
 mod tests {
+    use crate::init_test_logger;
+
     use super::*;
     use uuid::Uuid;
+
+    // This runs before any test in this module
+    #[ctor::ctor]
+    fn init() {
+        init_test_logger();
+    }
 
     /// Creates a task type and then retrieves it by id
     #[sqlx::test(migrator = "db_common::MIGRATOR")]
