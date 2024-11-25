@@ -2,7 +2,6 @@ pub mod base;
 pub mod rabbit;
 pub mod redis;
 
-use async_trait::async_trait;
 use base::BaseBroker;
 use rabbit::RabbitBroker;
 use redis::RedisBroker;
@@ -107,6 +106,7 @@ unsafe impl Sync for Broker {}
 #[cfg(test)]
 mod tests {
     use super::*;
+    use async_trait::async_trait;
 
     // Mock implementations for BaseBroker, RedisBroker, and RabbitBroker
     #[derive(Clone)]
