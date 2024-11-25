@@ -25,6 +25,7 @@ services:
       RABBITMQ_DEFAULT_PASS: password
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+      
   postgres:
     image: postgres:latest
     environment:
