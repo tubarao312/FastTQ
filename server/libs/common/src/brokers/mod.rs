@@ -20,12 +20,16 @@ async fn create_broker_connection(
     }
 }
 
+#[derive(Clone)]
 pub struct Broker {
     pub uri: String,
     pub broker: Arc<Box<dyn MessageQueue>>,
     pub workers: HashMap<String, Vec<String>>,
     pub wokers_index: HashMap<String, usize>,
 }
+
+unsafe impl Send for Broker {}
+unsafe impl Sync for Broker {}
 
 impl Broker {
     pub async fn new(uri: &String) -> Result<Self, Box<dyn std::error::Error>> {
@@ -88,20 +92,6 @@ impl Broker {
         Ok(())
     }
 }
-
-impl Clone for Broker {
-    fn clone(&self) -> Self {
-        Broker {
-            uri: self.uri.clone(),
-            broker: self.broker.clone(),
-            workers: self.workers.clone(),
-            wokers_index: self.wokers_index.clone(),
-        }
-    }
-}
-// Needs these implementations to be able to be used on the AppState struct
-unsafe impl Send for Broker {}
-unsafe impl Sync for Broker {}
 
 #[cfg(test)]
 mod tests {
