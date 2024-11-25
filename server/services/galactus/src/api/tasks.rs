@@ -4,9 +4,10 @@ use axum::{
     routing::{get, post, put},
     Router,
 };
+use tracing::info;
 use uuid::Uuid;
 
-use common::models::Task;
+use common::{models::Task, TaskStatus, TaskType};
 
 use crate::AppState;
 
@@ -28,7 +29,16 @@ async fn get_task_by_id(
     Path(id): Path<Uuid>,
     State(AppState { db_pools }): State<AppState>,
 ) -> Result<Json<Task>, StatusCode> {
-    todo!("Implement me")
+    let task_type = TaskType::new("test".to_string());
+
+    let task = Task::new(
+        task_type,
+        Some(serde_json::Value::String("test".to_string())),
+    );
+
+    info!("Getting task by id: {:?}", id);
+
+    Ok(Json(task))
 }
 
 /// Create a new task
@@ -42,7 +52,16 @@ async fn create_task(
     State(AppState { db_pools }): State<AppState>,
     Json(task): Json<Task>,
 ) -> Result<Json<Task>, StatusCode> {
-    todo!("Implement me")
+    let task_type = TaskType::new("test".to_string());
+
+    let task = Task::new(
+        task_type,
+        Some(serde_json::Value::String("test".to_string())),
+    );
+
+    info!("Creating task: {:?}", task);
+
+    Ok(Json(task))
 }
 
 /// Update the status of a task
@@ -55,6 +74,7 @@ async fn create_task(
 async fn update_task_status(
     Path(id): Path<Uuid>,
     State(AppState { db_pools }): State<AppState>,
-) -> Result<Json<Task>, StatusCode> {
-    todo!("Implement me")
+) -> Result<StatusCode, StatusCode> {
+    info!("Updating task status for task: {:?}", id);
+    Ok(StatusCode::OK)
 }

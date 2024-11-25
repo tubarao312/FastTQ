@@ -10,3 +10,12 @@ pub struct TaskType {
     pub id: Uuid,
     pub name: String,
 }
+
+impl TaskType {
+    pub fn new(name: String) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            name,
+        }
+    }
+}
