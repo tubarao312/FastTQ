@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use redis::{AsyncCommands, Client, RedisResult};
 use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct RedisBroker {
     client: Arc<Client>,
 }
@@ -27,11 +28,12 @@ impl BaseBroker for RedisBroker {
     async fn publish_message(
         &self,
         exchange: &str,
-        _routing_key: &str,
+        routing_key: &str,
         payload: &[u8],
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
-        let result: RedisResult<()> = conn.publish(exchange, payload).await;
+        let queue = format!("{}:{}", exchange, routing_key);
+        let result: RedisResult<()> = conn.publish(queue, payload).await;
 
         match result {
             Ok(_) => Ok(()),

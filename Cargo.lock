@@ -503,10 +503,16 @@ dependencies = [
 name = "common"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "futures",
+ "lapin",
+ "redis",
  "serde",
  "serde_json",
  "sqlx",
  "strum_macros",
+ "tokio",
+ "tracing",
  "uuid",
 ]
 
@@ -974,8 +980,6 @@ dependencies = [
  "db_common",
  "dotenv",
  "futures",
- "lapin",
- "redis",
  "serde_json",
  "sqlx",
  "tokio",
