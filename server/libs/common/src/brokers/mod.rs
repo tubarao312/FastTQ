@@ -2,27 +2,27 @@ pub mod base;
 pub mod rabbit;
 pub mod redis;
 
-use base::BaseBroker;
+use base::MessageQueue;
 use rabbit::RabbitBroker;
 use redis::RedisBroker;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 async fn create_broker_connection(
     uri: &String,
-) -> Result<Box<dyn BaseBroker>, Box<dyn std::error::Error>> {
+) -> Result<Arc<Box<dyn MessageQueue>>, Box<dyn std::error::Error>> {
     let prefix = uri.split(":").collect::<Vec<&str>>()[0];
 
     match prefix {
-        "redis" => Ok(Box::new(RedisBroker::new(&uri).await?)),
-        "amqp" => Ok(Box::new(RabbitBroker::new(&uri).await?)),
+        "redis" => Ok(Arc::new(Box::new(RedisBroker::new(&uri).await?))),
+        "amqp" => Ok(Arc::new(Box::new(RabbitBroker::new(&uri).await?))),
         _ => Err("Invalid broker URI".into()),
     }
 }
 
 pub struct Broker {
     pub uri: String,
-    pub broker: Box<dyn BaseBroker>,
+    pub broker: Arc<Box<dyn MessageQueue>>,
     pub workers: HashMap<String, Vec<String>>,
     pub wokers_index: HashMap<String, usize>,
 }
@@ -112,7 +112,7 @@ mod tests {
     #[derive(Clone)]
     struct MockBroker;
     #[async_trait]
-    impl BaseBroker for MockBroker {
+    impl MessageQueue for MockBroker {
         async fn register_queue(&self, _: &str) -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
@@ -149,7 +149,7 @@ mod tests {
         let uri = "redis://localhost".to_string();
         let broker = Broker {
             uri: uri.clone(),
-            broker: Box::new(MockBroker),
+            broker: Arc::new(Box::new(MockBroker)),
             workers: HashMap::new(),
             wokers_index: HashMap::new(),
         };
@@ -198,7 +198,7 @@ mod tests {
     async fn test_broker_publish() {
         let uri = "redis://localhost".to_string();
         let mut broker = Broker::new(&uri).await.unwrap();
-        broker.broker = Box::new(MockBroker {});
+        broker.broker = Arc::new(Box::new(MockBroker {}));
 
         broker
             .register_worker("task1", "worker1".to_string())
