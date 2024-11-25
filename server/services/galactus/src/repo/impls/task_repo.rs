@@ -1,15 +1,16 @@
 use std::time::SystemTime;
 
 use async_trait::async_trait;
-use sqlx::PgPool;
-use tracing::info;
-use uuid::Uuid;
-
-use crate::repo::{PgRepositoryCore, TaskRepository};
 use common::{
     models::{Task, TaskResult},
     TaskStatus, TaskType,
 };
+use sqlx::PgPool;
+use uuid::Uuid;
+
+use crate::repo::{PgRepositoryCore, TaskRepository};
+
+#[derive(Clone)]
 pub struct PgTaskRepository {
     core: PgRepositoryCore,
 }
@@ -52,7 +53,7 @@ impl TaskRepository for PgTaskRepository {
         .fetch_one(&self.core.pool)
         .await?;
 
-        let task = Task {
+        Ok(Task {
             id: row.id,
             task_type: TaskType {
                 id: row.task_type_id,
@@ -62,11 +63,7 @@ impl TaskRepository for PgTaskRepository {
             status: row.status.into(),
             assigned_to: row.assigned_to,
             created_at: row.created_at.into(),
-        };
-
-        info!("Created task: {:?}", task);
-
-        Ok(task)
+        })
     }
 
     async fn get_task_by_id(&self, id: &Uuid) -> Result<Task, sqlx::Error> {
@@ -247,12 +244,9 @@ impl TaskRepository for PgTaskRepository {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        init_test_logger,
-        repo::{
-            PgRepositoryCore, PgTaskTypeRepository, PgWorkerRepository, TaskTypeRepository,
-            WorkerRepository,
-        },
+    use crate::repo::{
+        PgRepositoryCore, PgTaskTypeRepository, PgWorkerRepository, TaskTypeRepository,
+        WorkerRepository,
     };
 
     use super::*;
@@ -260,12 +254,6 @@ mod tests {
     use sqlx::PgPool;
     use std::time::SystemTime;
     use uuid::Uuid;
-
-    // This runs before any test in this module
-    #[ctor::ctor]
-    fn init() {
-        init_test_logger();
-    }
 
     /// Creates a task and then retrieves it by id
     #[sqlx::test(migrator = "db_common::MIGRATOR")]

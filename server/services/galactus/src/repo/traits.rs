@@ -12,7 +12,7 @@ use uuid::Uuid;
 /// Provides methods for creating new tasks and retrieving existing tasks by their ID.
 /// Tasks represent units of work that can be assigned to and processed by workers.
 #[async_trait]
-pub trait TaskRepository {
+pub trait TaskRepository: Clone {
     /// Create a new task in the database
     async fn create_task(
         &self,
@@ -58,7 +58,7 @@ pub trait TaskRepository {
 /// Provides methods for registering and managing task types that workers can process.
 /// Task types define the different kinds of work that can be performed in the system.
 #[async_trait]
-pub trait TaskTypeRepository {
+pub trait TaskTypeRepository: Clone {
     /// Register a new task type
     async fn put_task_type(&self, task_type: &TaskType) -> Result<(), sqlx::Error>;
 
@@ -73,7 +73,7 @@ pub trait TaskTypeRepository {
 ///
 /// Provides methods for registering and managing workers that can process tasks.
 #[async_trait]
-pub trait WorkerRepository {
+pub trait WorkerRepository: Clone {
     /// Register a new worker with its supported task types
     async fn register_worker(
         &self,

@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crate::repo::{PgRepositoryCore, WorkerRepository};
 
+#[derive(Clone)]
 pub struct PgWorkerRepository {
     core: PgRepositoryCore,
 }
@@ -210,16 +211,7 @@ impl WorkerRepository for PgWorkerRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        init_test_logger,
-        repo::{PgRepositoryCore, PgTaskTypeRepository, TaskTypeRepository},
-    };
-
-    // This runs before any test in this module
-    #[ctor::ctor]
-    fn init() {
-        init_test_logger();
-    }
+    use crate::repo::{PgRepositoryCore, PgTaskTypeRepository, TaskTypeRepository};
 
     /// Registers a worker and then retrieves it by id
     #[sqlx::test(migrator = "db_common::MIGRATOR")]
