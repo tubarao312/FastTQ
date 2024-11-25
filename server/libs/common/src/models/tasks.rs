@@ -78,3 +78,16 @@ pub struct TaskResult {
     pub worker_id: Uuid,
     pub created_at: SystemTime,
 }
+
+impl Task {
+    pub fn new(task_type: TaskType, input_data: Option<serde_json::Value>) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            task_type,
+            input_data,
+            status: TaskStatus::Pending,
+            created_at: SystemTime::now(),
+            assigned_to: None,
+        }
+    }
+}
