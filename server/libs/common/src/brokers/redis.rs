@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use redis::{AsyncCommands, Client, RedisResult};
 use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct RedisBroker {
     client: Arc<Client>,
 }
