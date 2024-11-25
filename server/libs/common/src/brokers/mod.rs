@@ -18,15 +18,9 @@ async fn create_broker_connection(
     }
 }
 
-#[derive(Clone)]
-pub struct Queue {
-    name: String,
-}
-
 pub struct Broker {
     pub uri: String,
-    pub broker: Box<dyn BaseBroker>,
-    pub queues: Vec<Queue>,
+    pub brokers: Vec<Box<dyn BaseBroker>>,
 }
 
 impl Broker {
@@ -34,8 +28,7 @@ impl Broker {
         let broker = create_broker_connection(uri).await?;
         Ok(Broker {
             uri: uri.clone(),
-            broker,
-            queues: Vec::new(),
+            brokers: vec![broker],
         })
     }
 }
@@ -44,8 +37,7 @@ impl Clone for Broker {
     fn clone(&self) -> Self {
         Broker {
             uri: self.uri.clone(),
-            broker: self.broker.clone(),
-            queues: self.queues.clone(),
+            brokers: self.brokers.clone(),
         }
     }
 }
