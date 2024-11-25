@@ -63,3 +63,11 @@ async fn main() {
     // Serve the app
     serve(listener, app.into_make_service()).await.unwrap();
 }
+
+#[cfg(test)]
+pub fn init_test_logger() {
+    let _ = tracing_subscriber::fmt()
+        .with_test_writer()
+        .with_max_level(tracing::Level::DEBUG)
+        .try_init();
+}
