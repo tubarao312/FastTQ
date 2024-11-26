@@ -45,18 +45,24 @@ impl Broker {
         Ok(())
     }
 
-    pub fn remove_worker(&mut self, worker_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn remove_worker(
+        &mut self,
+        worker_id: uuid::Uuid,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let index = self
             .workers
             .iter()
-            .position(|worker| worker.name == worker_name)
+            .position(|worker| worker.id == worker_id)
             .unwrap();
         self.workers.remove(index);
 
         Ok(())
     }
 
-    pub async fn publish(&mut self, task: TaskInstance) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn publish(
+        &mut self,
+        task: TaskInstance,
+    ) -> Result<&Worker, Box<dyn std::error::Error>> {
         let worker = (0..self.workers.len())
             // Cycle the workers list in a round robin fashion
             .map(|_| {
@@ -76,7 +82,7 @@ impl Broker {
             .publish_message(&task.task_kind.name, &worker.name, &payload)
             .await?;
 
-        Ok(())
+        Ok(worker)
     }
 }
 
@@ -210,7 +216,7 @@ mod tests {
             broker.register_worker(worker).unwrap();
         }
 
-        broker.remove_worker("worker1").unwrap();
+        broker.remove_worker(workers[0].id).unwrap();
         assert_eq!(broker.workers.len(), 2);
     }
 
@@ -228,9 +234,18 @@ mod tests {
             broker.register_worker(worker).unwrap();
         }
 
-        for task in tasks {
-            broker.publish(task).await.unwrap();
-        }
+        // Test round robin
+        let task = tasks[2].clone();
+        let worker = broker.publish(task).await.unwrap();
+        assert_eq!(worker.name, "worker2");
+
+        let task = tasks[0].clone();
+        let worker = broker.publish(task).await.unwrap();
+        assert_eq!(worker.name, "worker3");
+
+        let task = tasks[1].clone();
+        let worker = broker.publish(task).await.unwrap();
+        assert_eq!(worker.name, "worker2");
     }
 
     #[tokio::test]

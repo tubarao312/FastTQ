@@ -15,7 +15,7 @@ use crate::models::TaskKind;
 /// * `Completed`: Task completed successfully
 /// * `Failed`: Task failed to complete
 /// * `Cancelled`: Task was cancelled before completion
-#[derive(Display, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Display, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum TaskStatus {
     Pending,   // Task is created but not yet assigned
     Queued,    // Task has been assigned to a worker and sent to a queue
@@ -58,7 +58,7 @@ impl From<TaskStatus> for String {
 /// Tasks are sent to workers to be executed with a specific payload.
 /// Workers are eligble for receiving certain tasks depending on their
 /// list of capabilities.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TaskInstance {
     pub id: Uuid,
     pub task_kind: TaskKind,
