@@ -19,16 +19,6 @@ use repo::{
 use tracing::info;
 use tracing_subscriber;
 
-/// Represents the shared application state that can be accessed by all routes
-///
-/// Contains all the repositories used for the application logic
-#[derive(Clone)]
-pub struct AppState {
-    pub task_repository: PgTaskRepository,
-    pub task_type_repository: PgTaskTypeRepository,
-    pub worker_repository: PgWorkerRepository,
-}
-
 /// Initializes the logger with the appropriate formatting
 async fn setup_logger() {
     tracing_subscriber::fmt()
@@ -40,6 +30,16 @@ async fn setup_logger() {
         .init();
 
     info!("Logger initialized");
+}
+
+/// Represents the shared application state that can be accessed by all routes
+///
+/// Contains all the repositories used for the application logic
+#[derive(Clone)]
+pub struct AppState {
+    pub task_repository: PgTaskRepository,
+    pub task_type_repository: PgTaskTypeRepository,
+    pub worker_repository: PgWorkerRepository,
 }
 
 /// Initializes the application state based on the given configuration

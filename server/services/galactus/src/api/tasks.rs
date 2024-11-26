@@ -9,7 +9,7 @@ use uuid::Uuid;
 
 use common::{models::Task, TaskStatus, TaskType};
 
-use crate::AppState;
+use crate::{repo::TaskRepository, AppState};
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -27,18 +27,22 @@ pub fn routes() -> Router<AppState> {
 /// Returns a JSON response containing the task if found
 async fn get_task_by_id(
     Path(id): Path<Uuid>,
-    State(AppState { db_pools }): State<AppState>,
+    State(state): State<AppState>,
 ) -> Result<Json<Task>, StatusCode> {
-    let task_type = TaskType::new("test".to_string());
-
-    let task = Task::new(
-        task_type,
-        Some(serde_json::Value::String("test".to_string())),
-    );
-
     info!("Getting task by id: {:?}", id);
 
-    Ok(Json(task))
+    let task = state.task_repository.get_task_by_id(&id).await;
+
+    match task {
+        Ok(task) => {
+            info!("Task with ID {:?} found: {:?}", id, task);
+            Ok(Json(task))
+        }
+        Err(e) => {
+            error!("Error getting task with ID {:?}: {:?}", id, e);
+            Err(StatusCode::NOT_FOUND)
+        }
+    }
 }
 
 /// Create a new task
@@ -49,7 +53,7 @@ async fn get_task_by_id(
 /// # Returns
 /// Returns a JSON response containing the created task
 async fn create_task(
-    State(AppState { db_pools }): State<AppState>,
+    State(state): State<AppState>,
     Json(task): Json<Task>,
 ) -> Result<Json<Task>, StatusCode> {
     let task_type = TaskType::new("test".to_string());
