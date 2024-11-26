@@ -7,7 +7,7 @@ use axum::{
 use tracing::info;
 use uuid::Uuid;
 
-use common::{models::Task, TaskStatus, TaskType};
+use common::{models::TaskInstance, TaskStatus, TaskKind};
 
 use crate::AppState;
 
@@ -28,10 +28,10 @@ pub fn routes() -> Router<AppState> {
 async fn get_task_by_id(
     Path(id): Path<Uuid>,
     State(AppState { db_pools, broker }): State<AppState>,
-) -> Result<Json<Task>, StatusCode> {
-    let task_type = TaskType::new("test".to_string());
+) -> Result<Json<TaskInstance>, StatusCode> {
+    let task_type = TaskKind::new("test".to_string());
 
-    let task = Task::new(
+    let task = TaskInstance::new(
         task_type,
         Some(serde_json::Value::String("test".to_string())),
     );
@@ -50,11 +50,11 @@ async fn get_task_by_id(
 /// Returns a JSON response containing the created task
 async fn create_task(
     State(AppState { db_pools, broker }): State<AppState>,
-    Json(task): Json<Task>,
-) -> Result<Json<Task>, StatusCode> {
-    let task_type = TaskType::new("test".to_string());
+    Json(task): Json<TaskInstance>,
+) -> Result<Json<TaskInstance>, StatusCode> {
+    let task_type = TaskKind::new("test".to_string());
 
-    let task = Task::new(
+    let task = TaskInstance::new(
         task_type,
         Some(serde_json::Value::String("test".to_string())),
     );

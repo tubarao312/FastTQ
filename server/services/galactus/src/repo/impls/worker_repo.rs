@@ -1,6 +1,5 @@
 use async_trait::async_trait;
-use common::models::{TaskType, Worker};
-use sqlx::PgPool;
+use common::models::{TaskKind, Worker};
 use std::time::SystemTime;
 use uuid::Uuid;
 
@@ -22,7 +21,7 @@ impl WorkerRepository for PgWorkerRepository {
         &self,
         id: Uuid,
         name: String,
-        task_types: Vec<TaskType>,
+        task_kinds: Vec<TaskKind>,
     ) -> Result<Worker, sqlx::Error> {
         let mut txn = self.core.pool.begin().await?;
 
@@ -49,14 +48,14 @@ impl WorkerRepository for PgWorkerRepository {
         .await?;
 
         // Insert new task types
-        for task_type in &task_types {
+        for task_kind in &task_kinds {
             sqlx::query!(
                 r#"
                 INSERT INTO worker_task_types (worker_id, task_type_id)
                 VALUES ($1, $2)
                 "#,
                 id,
-                task_type.id
+                task_kind.id
             )
             .execute(&mut *txn)
             .await?;
@@ -77,7 +76,7 @@ impl WorkerRepository for PgWorkerRepository {
             id,
             name,
             registered_at: row.registered_at.into(),
-            task_types,
+            task_kind: task_kinds.clone(),
             active: row.active,
         })
     }
@@ -108,9 +107,9 @@ impl WorkerRepository for PgWorkerRepository {
             id: *id,
             name: worker.name,
             registered_at: worker.registered_at.into(),
-            task_types: task_types
+            task_kind: task_types
                 .into_iter()
-                .map(|tt| TaskType {
+                .map(|tt| TaskKind {
                     id: tt.id,
                     name: tt.name,
                 })
@@ -147,9 +146,9 @@ impl WorkerRepository for PgWorkerRepository {
                 id: worker.id,
                 name: worker.name,
                 registered_at: worker.registered_at.into(),
-                task_types: task_types
+                task_kind: task_types
                     .into_iter()
-                    .map(|tt| TaskType {
+                    .map(|tt| TaskKind {
                         id: tt.id,
                         name: tt.name,
                     })
@@ -214,6 +213,7 @@ mod tests {
         init_test_logger,
         repo::{PgRepositoryCore, PgTaskTypeRepository, TaskTypeRepository},
     };
+    use sqlx::PgPool;
 
     // This runs before any test in this module
     #[ctor::ctor]
@@ -227,7 +227,7 @@ mod tests {
         let repo = PgWorkerRepository::new(PgRepositoryCore::new(pool.clone()));
         let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type = TaskType {
+        let task_type = TaskKind {
             id: Uuid::new_v4(),
             name: "Test Task".to_string(),
         };
@@ -245,14 +245,14 @@ mod tests {
 
         assert_eq!(worker.id, worker_id);
         assert_eq!(worker.name, "Test Worker");
-        assert_eq!(worker.task_types.len(), 1);
-        assert_eq!(worker.task_types[0].id, task_type.id);
+        assert_eq!(worker.task_kind.len(), 1);
+        assert_eq!(worker.task_kind[0].id, task_type.id);
         assert!(worker.active);
 
         let retrieved = repo.get_worker_by_id(&worker_id).await.unwrap();
         assert_eq!(worker.id, retrieved.id);
         assert_eq!(worker.name, retrieved.name);
-        assert_eq!(worker.task_types, retrieved.task_types);
+        assert_eq!(worker.task_kind, retrieved.task_kind);
     }
 
     /// Registers two workers and then retrieves all workers
@@ -261,7 +261,7 @@ mod tests {
         let repo = PgWorkerRepository::new(PgRepositoryCore::new(pool.clone()));
         let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type = TaskType {
+        let task_type = TaskKind {
             id: Uuid::new_v4(),
             name: "Test Task".to_string(),
         };
@@ -297,11 +297,11 @@ mod tests {
         let repo = PgWorkerRepository::new(PgRepositoryCore::new(pool.clone()));
         let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type1 = TaskType {
+        let task_type1 = TaskKind {
             id: Uuid::new_v4(),
             name: "Task 1".to_string(),
         };
-        let task_type2 = TaskType {
+        let task_type2 = TaskKind {
             id: Uuid::new_v4(),
             name: "Task 2".to_string(),
         };
@@ -326,8 +326,8 @@ mod tests {
 
         assert_eq!(updated.id, worker_id);
         assert_eq!(updated.name, "Updated Name");
-        assert_eq!(updated.task_types.len(), 1);
-        assert_eq!(updated.task_types[0].id, task_type2.id);
+        assert_eq!(updated.task_kind.len(), 1);
+        assert_eq!(updated.task_kind[0].id, task_type2.id);
     }
 
     /// Registers a worker and then updates its active status
@@ -336,7 +336,7 @@ mod tests {
         let repo = PgWorkerRepository::new(PgRepositoryCore::new(pool.clone()));
         let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type = TaskType {
+        let task_type = TaskKind {
             id: Uuid::new_v4(),
             name: "Test Task".to_string(),
         };
@@ -359,7 +359,7 @@ mod tests {
         let repo = PgWorkerRepository::new(PgRepositoryCore::new(pool.clone()));
         let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type = TaskType {
+        let task_type = TaskKind {
             id: Uuid::new_v4(),
             name: "Test Task".to_string(),
         };

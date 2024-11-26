@@ -6,7 +6,9 @@ use core::BrokerCore;
 use rabbit::RabbitBroker;
 use redis::RedisBroker;
 
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
+
+use crate::{TaskInstance, Worker};
 
 async fn create_broker_connection(
     uri: &String,
@@ -23,8 +25,8 @@ async fn create_broker_connection(
 pub struct Broker {
     pub uri: String,
     pub broker: Arc<dyn BrokerCore + Send + Sync>,
-    pub workers: HashMap<String, Vec<String>>,
-    pub wokers_index: HashMap<String, usize>,
+    pub workers: Vec<Worker>,
+    pub workers_index: usize,
 }
 
 impl Broker {
@@ -33,57 +35,46 @@ impl Broker {
         Ok(Broker {
             uri: uri.clone(),
             broker,
-            workers: HashMap::new(),
-            wokers_index: HashMap::new(),
+            workers: Vec::new(),
+            workers_index: 0,
         })
     }
 
-    pub fn register_worker(
-        &mut self,
-        task_name: &str,
-        worker_name: String,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        // If worker is not already registered for the task, add it and set the index to 0
-        if !self.workers.contains_key(task_name) {
-            self.workers
-                .insert(task_name.to_string(), vec![worker_name]);
-            self.wokers_index.insert(task_name.to_string(), 0);
-        // If worker is already registered for the task, add it to the list
-        } else {
-            let workers = self.workers.get_mut(task_name).unwrap();
-            workers.push(worker_name);
-        }
+    pub fn register_worker(&mut self, worker: Worker) -> Result<(), Box<dyn std::error::Error>> {
+        self.workers.push(worker);
+        Ok(())
+    }
+
+    pub fn remove_worker(&mut self, worker_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let index = self
+            .workers
+            .iter()
+            .position(|worker| worker.name == worker_name)
+            .unwrap();
+        self.workers.remove(index);
 
         Ok(())
     }
 
-    pub fn remove_worker(
-        &mut self,
-        task_name: &str,
-        worker_name: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let workers = self.workers.get_mut(task_name).unwrap();
-        let index = workers.iter().position(|x| x == worker_name).unwrap();
-        workers.remove(index);
+    pub async fn publish(&mut self, task: TaskInstance) -> Result<(), Box<dyn std::error::Error>> {
+        let worker = (0..self.workers.len())
+            // Cycle the workers list in a round robin fashion
+            .map(|_| {
+                let cur_worker = &self.workers[self.workers_index];
+                self.workers_index = (self.workers_index + 1) % self.workers.len();
+                cur_worker
+            })
+            // Find the first worker that can handle the task
+            .find(|cur_worker| cur_worker.can_handle(&task))
+            .ok_or_else(|| "No available worker")?;
 
-        Ok(())
-    }
+        // Convert input data to bytes
+        let payload = serde_json::to_vec(&task.input_data)?;
 
-    pub async fn publish(
-        &mut self,
-        task_name: &str,
-        message: &str,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let workers = self.workers.get_mut(task_name).unwrap();
-        let index = self.wokers_index.get_mut(task_name).unwrap();
-        let size = workers.len();
-
+        // Publish the task to the worker
         self.broker
-            .publish_message(task_name, &workers[*index], message.as_bytes())
+            .publish_message(&task.task_kind.name, &worker.name, &payload)
             .await?;
-
-        // Increment the index to the next worker
-        *index = (*index + 1) % size;
 
         Ok(())
     }
@@ -92,7 +83,11 @@ impl Broker {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::TaskKind;
+    use crate::TaskStatus;
     use async_trait::async_trait;
+    use std::time::SystemTime;
+    use uuid::Uuid;
 
     // Mock implementations for BaseBroker, RedisBroker, and RabbitBroker
     #[derive(Clone)]
@@ -112,6 +107,68 @@ mod tests {
         }
     }
 
+    fn setup_task_kinds() -> Vec<TaskKind> {
+        vec![
+            TaskKind::new("task1".to_string()),
+            TaskKind::new("task2".to_string()),
+        ]
+    }
+
+    fn setup_workers(task_kinds: Vec<TaskKind>) -> Vec<Worker> {
+        vec![
+            Worker {
+                id: Uuid::new_v4(),
+                name: "worker1".to_string(),
+                registered_at: SystemTime::now(),
+                task_kind: vec![task_kinds[0].clone()],
+                active: true,
+            },
+            Worker {
+                id: Uuid::new_v4(),
+                name: "worker2".to_string(),
+                registered_at: SystemTime::now(),
+                task_kind: vec![task_kinds[1].clone()],
+                active: true,
+            },
+            Worker {
+                id: Uuid::new_v4(),
+                name: "worker3".to_string(),
+                registered_at: SystemTime::now(),
+                task_kind: task_kinds,
+                active: true,
+            },
+        ]
+    }
+
+    fn setup_tasks(task_kinds: Vec<TaskKind>) -> Vec<TaskInstance> {
+        vec![
+            TaskInstance {
+                id: Uuid::new_v4(),
+                task_kind: task_kinds[0].clone(),
+                input_data: Some(serde_json::json!({"key": "value"})),
+                status: TaskStatus::Pending,
+                created_at: SystemTime::now(),
+                assigned_to: None,
+            },
+            TaskInstance {
+                id: Uuid::new_v4(),
+                task_kind: task_kinds[1].clone(),
+                input_data: Some(serde_json::json!({"key": "value"})),
+                status: TaskStatus::Pending,
+                created_at: SystemTime::now(),
+                assigned_to: None,
+            },
+            TaskInstance {
+                id: Uuid::new_v4(),
+                task_kind: task_kinds[1].clone(),
+                input_data: Some(serde_json::json!({"key": "value"})),
+                status: TaskStatus::Pending,
+                created_at: SystemTime::now(),
+                assigned_to: None,
+            },
+        ]
+    }
+
     #[tokio::test]
     async fn test_create_broker_connection() {
         let uri = "redis://localhost".to_string();
@@ -127,72 +184,77 @@ mod tests {
         let broker = broker.unwrap();
         assert_eq!(broker.uri, uri);
         assert_eq!(broker.workers.len(), 0);
-        assert_eq!(broker.wokers_index.len(), 0);
+        assert_eq!(broker.workers_index, 0);
     }
 
     #[tokio::test]
     async fn test_broker_register_worker() {
         let uri = "redis://localhost".to_string();
         let mut broker = Broker::new(&uri).await.unwrap();
-        broker
-            .register_worker("task1", "worker1".to_string())
-            .unwrap();
-        broker
-            .register_worker("task1", "worker2".to_string())
-            .unwrap();
-        broker
-            .register_worker("task2", "worker1".to_string())
-            .unwrap();
-        assert_eq!(broker.workers.len(), 2);
-        assert_eq!(broker.workers.get("task1").unwrap().len(), 2);
-        assert_eq!(broker.workers.get("task2").unwrap().len(), 1);
+        let workers = setup_workers(setup_task_kinds());
+
+        for worker in workers {
+            broker.register_worker(worker).unwrap();
+        }
+
+        assert_eq!(broker.workers.len(), 3);
     }
 
     #[tokio::test]
     async fn test_broker_remove_worker() {
         let uri = "redis://localhost".to_string();
         let mut broker = Broker::new(&uri).await.unwrap();
-        broker
-            .register_worker("task1", "worker1".to_string())
-            .unwrap();
-        broker
-            .register_worker("task1", "worker2".to_string())
-            .unwrap();
-        broker
-            .register_worker("task2", "worker1".to_string())
-            .unwrap();
-        broker.remove_worker("task1", "worker1").unwrap();
+        let workers = setup_workers(setup_task_kinds());
+
+        for worker in workers.clone() {
+            broker.register_worker(worker).unwrap();
+        }
+
+        broker.remove_worker("worker1").unwrap();
         assert_eq!(broker.workers.len(), 2);
-        assert_eq!(broker.workers.get("task1").unwrap().len(), 1);
-        assert_eq!(broker.workers.get("task2").unwrap().len(), 1);
     }
 
     #[tokio::test]
     async fn test_broker_publish() {
         let uri = "redis://localhost".to_string();
+        let task_kinds = setup_task_kinds();
+        let workers = setup_workers(task_kinds.clone());
+        let tasks = setup_tasks(task_kinds.clone());
+
         let mut broker = Broker::new(&uri).await.unwrap();
         broker.broker = Arc::new(MockBroker {});
 
-        broker
-            .register_worker("task1", "worker1".to_string())
-            .unwrap();
-        broker
-            .register_worker("task1", "worker2".to_string())
-            .unwrap();
-        broker
-            .register_worker("task2", "worker1".to_string())
-            .unwrap();
+        for worker in workers.clone() {
+            broker.register_worker(worker).unwrap();
+        }
 
-        // Confirm that the message is published to the first worker
-        broker.publish("task1", "message1").await.unwrap();
-        assert_eq!(broker.wokers_index.get("task1").unwrap(), &1);
+        for task in tasks {
+            broker.publish(task).await.unwrap();
+        }
+    }
 
-        // Confirm that the message is published to the second worker
-        broker.publish("task1", "message2").await.unwrap();
-        assert_eq!(broker.wokers_index.get("task1").unwrap(), &0);
+    #[tokio::test]
+    async fn test_no_available_worker() {
+        let uri = "redis://localhost".to_string();
+        let mut broker = Broker::new(&uri).await.unwrap();
+        broker.broker = Arc::new(MockBroker {});
 
-        // Confirm that the message is published to the only worker
-        broker.publish("task2", "message3").await.unwrap();
-        assert_eq!(broker.wokers_index.get("task2").unwrap(), &0);
+        let workers = setup_workers(setup_task_kinds());
+
+        for worker in workers.clone() {
+            broker.register_worker(worker).unwrap();
+        }
+
+        let task = TaskInstance {
+            id: Uuid::new_v4(),
+            task_kind: TaskKind::new("task3".to_string()),
+            input_data: Some(serde_json::json!({"key": "value"})),
+            status: TaskStatus::Pending,
+            created_at: SystemTime::now(),
+            assigned_to: None,
+        };
+
+        let result = broker.publish(task).await;
+        assert!(result.is_err());
     }
 }
