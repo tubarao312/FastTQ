@@ -2,7 +2,7 @@ use std::time::SystemTime;
 
 use async_trait::async_trait;
 use common::{
-    models::{Task, TaskResult, TaskType, Worker},
+    models::{TaskInstance, TaskKind, TaskResult, Worker},
     TaskStatus,
 };
 use uuid::Uuid;
@@ -18,10 +18,10 @@ pub trait TaskRepository {
         &self,
         task_type_id: Uuid,
         input_data: Option<serde_json::Value>,
-    ) -> Result<Task, sqlx::Error>;
+    ) -> Result<TaskInstance, sqlx::Error>;
 
     /// Get a task by its ID
-    async fn get_task_by_id(&self, id: &Uuid) -> Result<Task, sqlx::Error>;
+    async fn get_task_by_id(&self, id: &Uuid) -> Result<TaskInstance, sqlx::Error>;
 
     /// Get task results by task ID
     async fn get_task_results_by_task_id(
@@ -60,13 +60,13 @@ pub trait TaskRepository {
 #[async_trait]
 pub trait TaskTypeRepository {
     /// Register a new task type
-    async fn put_task_type(&self, task_type: &TaskType) -> Result<(), sqlx::Error>;
+    async fn put_task_type(&self, task_type: &TaskKind) -> Result<(), sqlx::Error>;
 
     /// Get all registered task types
-    async fn get_all_task_types(&self) -> Result<Vec<TaskType>, sqlx::Error>;
+    async fn get_all_task_types(&self) -> Result<Vec<TaskKind>, sqlx::Error>;
 
     /// Get a task type by its ID
-    async fn get_task_type_by_id(&self, id: &Uuid) -> Result<TaskType, sqlx::Error>;
+    async fn get_task_type_by_id(&self, id: &Uuid) -> Result<TaskKind, sqlx::Error>;
 }
 
 /// Repository trait for managing worker records in the database
@@ -79,7 +79,7 @@ pub trait WorkerRepository {
         &self,
         id: Uuid,
         name: String,
-        task_types: Vec<TaskType>,
+        task_types: Vec<TaskKind>,
     ) -> Result<Worker, sqlx::Error>;
 
     /// Get a worker by ID

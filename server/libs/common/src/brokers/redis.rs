@@ -1,8 +1,9 @@
-use crate::brokers::base::BaseBroker;
+use crate::brokers::core::BrokerCore;
 use async_trait::async_trait;
 use redis::{AsyncCommands, Client, RedisResult};
 use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct RedisBroker {
     client: Arc<Client>,
 }
@@ -18,7 +19,7 @@ impl RedisBroker {
 }
 
 #[async_trait]
-impl BaseBroker for RedisBroker {
+impl BrokerCore for RedisBroker {
     async fn register_queue(&self, _: &str) -> Result<(), Box<dyn std::error::Error>> {
         // Redis does not have the concept of queues, so we don't need to do anything here
         Ok(())
@@ -27,11 +28,12 @@ impl BaseBroker for RedisBroker {
     async fn publish_message(
         &self,
         exchange: &str,
-        _routing_key: &str,
+        routing_key: &str,
         payload: &[u8],
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
-        let result: RedisResult<()> = conn.publish(exchange, payload).await;
+        let queue = format!("{}:{}", exchange, routing_key);
+        let result: RedisResult<()> = conn.publish(queue, payload).await;
 
         match result {
             Ok(_) => Ok(()),

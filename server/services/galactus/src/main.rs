@@ -1,5 +1,4 @@
 mod api;
-mod brokers;
 mod config;
 mod repo;
 
@@ -8,10 +7,13 @@ use tokio::net::TcpListener;
 
 use axum::{serve, Router};
 
+use common::brokers::Broker;
 use db_common::db::DatabasePools;
 
 use tracing::info;
 use tracing_subscriber;
+
+use std::sync::Arc;
 
 /// Represents the shared application state that can be accessed by all routes
 ///
@@ -19,6 +21,7 @@ use tracing_subscriber;
 #[derive(Clone)]
 pub struct AppState {
     pub db_pools: DatabasePools,
+    pub broker: Arc<Broker>,
 }
 
 async fn setup_logger() {
@@ -43,12 +46,19 @@ async fn main() {
     // Setup the database pools
     let db_pools = DatabasePools::new(&config.db_reader_url, &config.db_writer_url)
         .await
-        .unwrap();
+        .expect("Failed to initialize database pools");
 
     info!("Database pools initialized");
 
+    // Setup the broker
+    let broker = Arc::new(
+        Broker::new(&config.broker_addr)
+            .await
+            .expect("Failed to initialize broker"),
+    );
+
     // Setup the app state
-    let app_state = AppState { db_pools };
+    let app_state = AppState { db_pools, broker };
 
     // Setup the router
     let app = Router::new().merge(api::routes()).with_state(app_state);
@@ -56,12 +66,16 @@ async fn main() {
     info!("Router initialized");
 
     // Setup the listener and bind to the port
-    let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = TcpListener::bind("0.0.0.0:3000")
+        .await
+        .expect("Failed to bind to port");
 
     info!("Listener initialized");
 
     // Serve the app
-    serve(listener, app.into_make_service()).await.unwrap();
+    serve(listener, app.into_make_service())
+        .await
+        .expect("Failed to serve app");
 }
 
 #[cfg(test)]

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::Display;
 use uuid::Uuid;
 
-use crate::models::TaskType;
+use crate::models::TaskKind;
 
 // Task status enum
 
@@ -15,7 +15,7 @@ use crate::models::TaskType;
 /// * `Completed`: Task completed successfully
 /// * `Failed`: Task failed to complete
 /// * `Cancelled`: Task was cancelled before completion
-#[derive(Display, Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Display, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum TaskStatus {
     Pending,   // Task is created but not yet assigned
     Queued,    // Task has been assigned to a worker and sent to a queue
@@ -58,10 +58,10 @@ impl From<TaskStatus> for String {
 /// Tasks are sent to workers to be executed with a specific payload.
 /// Workers are eligble for receiving certain tasks depending on their
 /// list of capabilities.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Task {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct TaskInstance {
     pub id: Uuid,
-    pub task_type: TaskType,
+    pub task_kind: TaskKind,
     pub input_data: Option<serde_json::Value>,
     pub status: TaskStatus,
     pub created_at: SystemTime,
@@ -79,11 +79,11 @@ pub struct TaskResult {
     pub created_at: SystemTime,
 }
 
-impl Task {
-    pub fn new(task_type: TaskType, input_data: Option<serde_json::Value>) -> Self {
+impl TaskInstance {
+    pub fn new(task_type: TaskKind, input_data: Option<serde_json::Value>) -> Self {
         Self {
             id: Uuid::new_v4(),
-            task_type,
+            task_kind: task_type,
             input_data,
             status: TaskStatus::Pending,
             created_at: SystemTime::now(),

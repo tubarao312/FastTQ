@@ -7,8 +7,8 @@ use uuid::Uuid;
 
 use crate::repo::{PgRepositoryCore, TaskRepository};
 use common::{
-    models::{Task, TaskResult},
-    TaskStatus, TaskType,
+    models::{TaskInstance, TaskResult},
+    TaskKind, TaskStatus,
 };
 pub struct PgTaskRepository {
     core: PgRepositoryCore,
@@ -26,7 +26,7 @@ impl TaskRepository for PgTaskRepository {
         &self,
         task_type_id: Uuid,
         input_data: Option<serde_json::Value>,
-    ) -> Result<Task, sqlx::Error> {
+    ) -> Result<TaskInstance, sqlx::Error> {
         let task_id = Uuid::new_v4();
         let row = sqlx::query!(
             r#"
@@ -52,9 +52,9 @@ impl TaskRepository for PgTaskRepository {
         .fetch_one(&self.core.pool)
         .await?;
 
-        let task = Task {
+        let task = TaskInstance {
             id: row.id,
-            task_type: TaskType {
+            task_kind: TaskKind {
                 id: row.task_type_id,
                 name: task_type_row.name,
             },
@@ -69,7 +69,7 @@ impl TaskRepository for PgTaskRepository {
         Ok(task)
     }
 
-    async fn get_task_by_id(&self, id: &Uuid) -> Result<Task, sqlx::Error> {
+    async fn get_task_by_id(&self, id: &Uuid) -> Result<TaskInstance, sqlx::Error> {
         let row = sqlx::query!(
             r#"
             SELECT id, task_type_id, input_data, status::text, assigned_to, created_at 
@@ -90,9 +90,9 @@ impl TaskRepository for PgTaskRepository {
         .fetch_one(&self.core.pool)
         .await?;
 
-        Ok(Task {
+        Ok(TaskInstance {
             id: row.id,
-            task_type: TaskType {
+            task_kind: TaskKind {
                 id: task_type_row.id,
                 name: task_type_row.name,
             },
@@ -273,7 +273,7 @@ mod tests {
         let repo = PgTaskRepository::new(PgRepositoryCore::new(pool.clone()));
         let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type = TaskType {
+        let task_type = TaskKind {
             id: Uuid::new_v4(),
             name: "Test Task".to_string(),
         };
@@ -285,8 +285,8 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(task.task_type.id, task_type.id);
-        assert_eq!(task.task_type.name, task_type.name);
+        assert_eq!(task.task_kind.id, task_type.id);
+        assert_eq!(task.task_kind.name, task_type.name);
         assert_eq!(task.input_data, Some(input));
         assert_eq!(task.status, TaskStatus::Pending);
         assert_eq!(task.assigned_to, None);
@@ -303,7 +303,7 @@ mod tests {
         let task_type_repo = PgTaskTypeRepository::new(core.clone());
         let worker_repo = PgWorkerRepository::new(core);
 
-        let task_type = TaskType {
+        let task_type = TaskKind {
             id: Uuid::new_v4(),
             name: "Test Task".to_string(),
         };
@@ -357,7 +357,7 @@ mod tests {
         let repo = PgTaskRepository::new(PgRepositoryCore::new(pool.clone()));
         let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type = TaskType {
+        let task_type = TaskKind {
             id: Uuid::new_v4(),
             name: "Test Task".to_string(),
         };
@@ -379,7 +379,7 @@ mod tests {
         let repo = PgTaskRepository::new(PgRepositoryCore::new(pool.clone()));
         let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type = TaskType {
+        let task_type = TaskKind {
             id: Uuid::new_v4(),
             name: "Test Task".to_string(),
         };
@@ -395,7 +395,7 @@ mod tests {
         let repo = PgTaskRepository::new(PgRepositoryCore::new(pool.clone()));
         let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type = TaskType {
+        let task_type = TaskKind {
             id: Uuid::new_v4(),
             name: "Test Task".to_string(),
         };
@@ -420,7 +420,7 @@ mod tests {
         let repo = PgTaskRepository::new(PgRepositoryCore::new(pool.clone()));
         let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type = TaskType {
+        let task_type = TaskKind {
             id: Uuid::new_v4(),
             name: "Test Task".to_string(),
         };
