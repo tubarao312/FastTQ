@@ -6,23 +6,23 @@ use base::BaseBroker;
 use rabbit::RabbitBroker;
 use redis::RedisBroker;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 async fn create_broker_connection(
     uri: &String,
-) -> Result<Box<dyn BaseBroker>, Box<dyn std::error::Error>> {
+) -> Result<Arc<dyn BaseBroker>, Box<dyn std::error::Error>> {
     let prefix = uri.split(":").collect::<Vec<&str>>()[0];
 
     match prefix {
-        "redis" => Ok(Box::new(RedisBroker::new(&uri).await?)),
-        "amqp" => Ok(Box::new(RabbitBroker::new(&uri).await?)),
+        "redis" => Ok(Arc::new(RedisBroker::new(&uri).await?)),
+        "amqp" => Ok(Arc::new(RabbitBroker::new(&uri).await?)),
         _ => Err("Invalid broker URI".into()),
     }
 }
 
 pub struct Broker {
     pub uri: String,
-    pub broker: Box<dyn BaseBroker>,
+    pub broker: Arc<dyn BaseBroker>,
     pub workers: HashMap<String, Vec<String>>,
     pub wokers_index: HashMap<String, usize>,
 }
@@ -149,12 +149,14 @@ mod tests {
         let uri = "redis://localhost".to_string();
         let broker = Broker {
             uri: uri.clone(),
-            broker: Box::new(MockBroker),
+            broker: Arc::new(MockBroker),
             workers: HashMap::new(),
             wokers_index: HashMap::new(),
         };
         let cloned_broker = broker.clone();
         assert_eq!(cloned_broker.uri, uri);
+        assert_eq!(cloned_broker.workers.len(), 0);
+        assert_eq!(cloned_broker.wokers_index.len(), 0);
     }
 
     #[tokio::test]
@@ -198,7 +200,7 @@ mod tests {
     async fn test_broker_publish() {
         let uri = "redis://localhost".to_string();
         let mut broker = Broker::new(&uri).await.unwrap();
-        broker.broker = Box::new(MockBroker {});
+        broker.broker = Arc::new(MockBroker {});
 
         broker
             .register_worker("task1", "worker1".to_string())
