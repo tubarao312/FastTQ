@@ -13,13 +13,15 @@ use db_common::db::DatabasePools;
 use tracing::info;
 use tracing_subscriber;
 
+use std::sync::Arc;
+
 /// Represents the shared application state that can be accessed by all routes
 ///
 /// Contains database connection pools for read and write operations
 #[derive(Clone)]
 pub struct AppState {
     pub db_pools: DatabasePools,
-    pub broker: Broker,
+    pub broker: Arc<Broker>,
 }
 
 async fn setup_logger() {
@@ -49,9 +51,11 @@ async fn main() {
     info!("Database pools initialized");
 
     // Setup the broker
-    let broker = Broker::new(&config.broker_addr)
-        .await
-        .expect("Failed to initialize broker");
+    let broker = Arc::new(
+        Broker::new(&config.broker_addr)
+            .await
+            .expect("Failed to initialize broker"),
+    );
 
     // Setup the app state
     let app_state = AppState { db_pools, broker };

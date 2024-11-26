@@ -10,7 +10,7 @@ use std::{collections::HashMap, sync::Arc};
 
 async fn create_broker_connection(
     uri: &String,
-) -> Result<Arc<dyn BaseBroker>, Box<dyn std::error::Error>> {
+) -> Result<Arc<dyn BaseBroker + Send + Sync>, Box<dyn std::error::Error>> {
     let prefix = uri.split(":").collect::<Vec<&str>>()[0];
 
     match prefix {
@@ -22,7 +22,7 @@ async fn create_broker_connection(
 
 pub struct Broker {
     pub uri: String,
-    pub broker: Arc<dyn BaseBroker>,
+    pub broker: Arc<dyn BaseBroker + Send + Sync>,
     pub workers: HashMap<String, Vec<String>>,
     pub wokers_index: HashMap<String, usize>,
 }
@@ -89,20 +89,6 @@ impl Broker {
     }
 }
 
-impl Clone for Broker {
-    fn clone(&self) -> Self {
-        Broker {
-            uri: self.uri.clone(),
-            broker: self.broker.clone(),
-            workers: self.workers.clone(),
-            wokers_index: self.wokers_index.clone(),
-        }
-    }
-}
-// Needs these implementations to be able to be used on the AppState struct
-unsafe impl Send for Broker {}
-unsafe impl Sync for Broker {}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -142,21 +128,6 @@ mod tests {
         assert_eq!(broker.uri, uri);
         assert_eq!(broker.workers.len(), 0);
         assert_eq!(broker.wokers_index.len(), 0);
-    }
-
-    #[test]
-    fn test_broker_clone() {
-        let uri = "redis://localhost".to_string();
-        let broker = Broker {
-            uri: uri.clone(),
-            broker: Arc::new(MockBroker),
-            workers: HashMap::new(),
-            wokers_index: HashMap::new(),
-        };
-        let cloned_broker = broker.clone();
-        assert_eq!(cloned_broker.uri, uri);
-        assert_eq!(cloned_broker.workers.len(), 0);
-        assert_eq!(cloned_broker.wokers_index.len(), 0);
     }
 
     #[tokio::test]
