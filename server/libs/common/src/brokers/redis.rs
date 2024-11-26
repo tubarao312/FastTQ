@@ -1,4 +1,4 @@
-use crate::brokers::base::BaseBroker;
+use crate::brokers::core::BrokerCore;
 use async_trait::async_trait;
 use redis::{AsyncCommands, Client, RedisResult};
 use std::sync::Arc;
@@ -19,7 +19,7 @@ impl RedisBroker {
 }
 
 #[async_trait]
-impl BaseBroker for RedisBroker {
+impl BrokerCore for RedisBroker {
     async fn register_queue(&self, _: &str) -> Result<(), Box<dyn std::error::Error>> {
         // Redis does not have the concept of queues, so we don't need to do anything here
         Ok(())

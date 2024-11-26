@@ -1,8 +1,8 @@
-pub mod base;
+pub mod core;
 pub mod rabbit;
 pub mod redis;
 
-use base::BaseBroker;
+use core::BrokerCore;
 use rabbit::RabbitBroker;
 use redis::RedisBroker;
 
@@ -10,7 +10,7 @@ use std::{collections::HashMap, sync::Arc};
 
 async fn create_broker_connection(
     uri: &String,
-) -> Result<Arc<dyn BaseBroker + Send + Sync>, Box<dyn std::error::Error>> {
+) -> Result<Arc<dyn BrokerCore + Send + Sync>, Box<dyn std::error::Error>> {
     let prefix = uri.split(":").collect::<Vec<&str>>()[0];
 
     match prefix {
@@ -22,7 +22,7 @@ async fn create_broker_connection(
 
 pub struct Broker {
     pub uri: String,
-    pub broker: Arc<dyn BaseBroker + Send + Sync>,
+    pub broker: Arc<dyn BrokerCore + Send + Sync>,
     pub workers: HashMap<String, Vec<String>>,
     pub wokers_index: HashMap<String, usize>,
 }
@@ -98,7 +98,7 @@ mod tests {
     #[derive(Clone)]
     struct MockBroker;
     #[async_trait]
-    impl BaseBroker for MockBroker {
+    impl BrokerCore for MockBroker {
         async fn register_queue(&self, _: &str) -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }

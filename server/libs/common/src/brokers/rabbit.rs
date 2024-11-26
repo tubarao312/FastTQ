@@ -1,4 +1,4 @@
-use crate::brokers::base::BaseBroker;
+use crate::brokers::core::BrokerCore;
 use async_trait::async_trait;
 use lapin::{options::*, types::FieldTable, BasicProperties, Connection, ConnectionProperties};
 use std::sync::Arc;
@@ -19,7 +19,7 @@ impl RabbitBroker {
 }
 
 #[async_trait]
-impl BaseBroker for RabbitBroker {
+impl BrokerCore for RabbitBroker {
     async fn register_queue(&self, queue_name: &str) -> Result<(), Box<dyn std::error::Error>> {
         let channel = self.connection.create_channel().await?;
         channel
