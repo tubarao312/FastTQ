@@ -1,7 +1,7 @@
-mod task_types;
+mod task_kinds;
 mod tasks;
 mod workers;
 
-pub use task_types::*;
+pub use task_kinds::*;
 pub use tasks::*;
 pub use workers::*;

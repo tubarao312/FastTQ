@@ -18,9 +18,11 @@ impl Config {
         load_env();
 
         Config {
-            broker_addr: std::env::var("FASTTQ_BROKER_ADDR").unwrap(),
-            db_reader_url: std::env::var("FASTTQ_DATABASE_READER_URL").unwrap(),
-            db_writer_url: std::env::var("FASTTQ_DATABASE_WRITER_URL").unwrap(),
+            broker_addr: std::env::var("FASTTQ_BROKER_ADDR").expect("Missing broker address"),
+            db_reader_url: std::env::var("FASTTQ_DATABASE_READER_URL")
+                .expect("Missing database reader URL"),
+            db_writer_url: std::env::var("FASTTQ_DATABASE_WRITER_URL")
+                .expect("Missing database writer URL"),
         }
     }
 }

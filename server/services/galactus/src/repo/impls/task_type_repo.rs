@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use common::models::TaskType;
+use common::models::TaskKind;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -19,7 +19,7 @@ impl PgTaskTypeRepository {
 
 #[async_trait]
 impl TaskTypeRepository for PgTaskTypeRepository {
-    async fn put_task_type(&self, task_type: &TaskType) -> Result<(), sqlx::Error> {
+    async fn put_task_type(&self, task_type: &TaskKind) -> Result<(), sqlx::Error> {
         sqlx::query!(
             r#"
             INSERT INTO task_types (id, name)
@@ -35,7 +35,7 @@ impl TaskTypeRepository for PgTaskTypeRepository {
         Ok(())
     }
 
-    async fn get_all_task_types(&self) -> Result<Vec<TaskType>, sqlx::Error> {
+    async fn get_all_task_types(&self) -> Result<Vec<TaskKind>, sqlx::Error> {
         let rows = sqlx::query!(
             r#"
             SELECT id, name FROM task_types
@@ -46,14 +46,14 @@ impl TaskTypeRepository for PgTaskTypeRepository {
 
         Ok(rows
             .into_iter()
-            .map(|row| TaskType {
+            .map(|row| TaskKind {
                 id: row.id,
                 name: row.name,
             })
             .collect())
     }
 
-    async fn get_task_type_by_id(&self, id: &Uuid) -> Result<TaskType, sqlx::Error> {
+    async fn get_task_type_by_id(&self, id: &Uuid) -> Result<TaskKind, sqlx::Error> {
         let row = sqlx::query!(
             r#"
             SELECT id, name FROM task_types WHERE id = $1
@@ -63,7 +63,7 @@ impl TaskTypeRepository for PgTaskTypeRepository {
         .fetch_one(&self.core.pool)
         .await?;
 
-        Ok(TaskType {
+        Ok(TaskKind {
             id: row.id,
             name: row.name,
         })
@@ -80,7 +80,7 @@ mod tests {
     async fn create_and_retrieve_task_type(pool: PgPool) {
         let repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type = TaskType {
+        let task_type = TaskKind {
             id: Uuid::new_v4(),
             name: "Test Task".to_string(),
         };
@@ -97,12 +97,12 @@ mod tests {
     async fn get_all_task_types(pool: PgPool) {
         let repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type1 = TaskType {
+        let task_type1 = TaskKind {
             id: Uuid::new_v4(),
             name: "Test Task 1".to_string(),
         };
 
-        let task_type2 = TaskType {
+        let task_type2 = TaskKind {
             id: Uuid::new_v4(),
             name: "Test Task 2".to_string(),
         };
@@ -123,14 +123,14 @@ mod tests {
         let repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
 
         let id = Uuid::new_v4();
-        let task_type = TaskType {
+        let task_type = TaskKind {
             id,
             name: "Original Name".to_string(),
         };
 
         repo.put_task_type(&task_type).await.unwrap();
 
-        let updated = TaskType {
+        let updated = TaskKind {
             id,
             name: "Updated Name".to_string(),
         };

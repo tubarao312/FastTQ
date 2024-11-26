@@ -1,5 +1,4 @@
 mod api;
-mod brokers;
 mod config;
 mod repo;
 
@@ -10,6 +9,7 @@ use tokio::net::TcpListener;
 
 use axum::{serve, Router};
 
+use common::brokers::Broker;
 use db_common::db::DatabasePools;
 use repo::{
     PgRepositoryCore, PgTaskRepository, PgTaskTypeRepository, PgWorkerRepository, TaskRepository,
@@ -20,6 +20,8 @@ use tracing::info;
 use tracing_subscriber;
 
 /// Initializes the logger with the appropriate formatting
+use std::sync::Arc;
+
 async fn setup_logger() {
     tracing_subscriber::fmt()
         .with_thread_ids(true)
@@ -40,6 +42,7 @@ pub struct AppState {
     pub task_repository: PgTaskRepository,
     pub task_type_repository: PgTaskTypeRepository,
     pub worker_repository: PgWorkerRepository,
+    pub broker: Arc<Broker>,
 }
 
 /// Initializes the application state based on the given configuration
@@ -55,10 +58,18 @@ async fn setup_app_state(config: Config) -> AppState {
     let task_type_repository = PgTaskTypeRepository::new(core.clone());
     let worker_repository = PgWorkerRepository::new(core);
 
+    // Setup the broker
+    let broker = Arc::new(
+        Broker::new(&config.broker_addr)
+            .await
+            .expect("Failed to initialize broker"),
+    );
+
     AppState {
         task_repository,
         task_type_repository,
         worker_repository,
+        broker,
     }
 }
 
@@ -81,12 +92,16 @@ async fn main() {
     info!("Router initialized");
 
     // Setup the listener and bind to the port
-    let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
+    let listener = TcpListener::bind("0.0.0.0:3000")
+        .await
+        .expect("Failed to bind to port");
 
     info!("Listener initialized");
 
     // Serve the app
-    serve(listener, app.into_make_service()).await.unwrap();
+    serve(listener, app.into_make_service())
+        .await
+        .expect("Failed to serve app");
 }
 
 #[cfg(test)]

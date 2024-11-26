@@ -25,7 +25,7 @@ pub fn routes() -> Router<AppState> {
 /// # Returns
 /// Returns a JSON response containing the registered worker
 async fn register_worker(
-    State(AppState { db_pools }): State<AppState>,
+    State(AppState { db_pools, broker }): State<AppState>,
     Json(worker): Json<Worker>,
 ) -> Result<Json<Worker>, StatusCode> {
     todo!("Implement worker registration")
@@ -39,7 +39,7 @@ async fn register_worker(
 /// # Returns
 /// Returns a JSON response containing the updated worker
 async fn heartbeat(
-    State(AppState { db_pools }): State<AppState>,
+    State(AppState { db_pools, broker }): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Worker>, StatusCode> {
     todo!("Implement worker heartbeat")
@@ -53,7 +53,7 @@ async fn heartbeat(
 /// # Returns
 /// Returns a JSON response containing the unregistered worker
 async fn unregister_worker(
-    State(AppState { db_pools }): State<AppState>,
+    State(AppState { db_pools, broker }): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<Json<Worker>, StatusCode> {
     todo!("Implement worker unregistration")
