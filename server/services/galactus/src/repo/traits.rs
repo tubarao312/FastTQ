@@ -12,22 +12,20 @@ use uuid::Uuid;
 /// Provides methods for creating new tasks and retrieving existing tasks by their ID.
 /// Tasks represent units of work that can be assigned to and processed by workers.
 #[async_trait]
-pub trait TaskRepository: Clone {
+pub trait TaskInstanceRepository: Clone {
     /// Create a new task in the database
     async fn create_task(
         &self,
-        task_type_id: Uuid,
+        task_kind_id: Uuid,
         input_data: Option<serde_json::Value>,
     ) -> Result<TaskInstance, sqlx::Error>;
 
     /// Get a task by its ID
-    async fn get_task_by_id(&self, id: &Uuid) -> Result<TaskInstance, sqlx::Error>;
-
-    /// Get task results by task ID
-    async fn get_task_results_by_task_id(
+    async fn get_task_by_id(
         &self,
-        task_id: &Uuid,
-    ) -> Result<Vec<TaskResult>, sqlx::Error>;
+        id: &Uuid,
+        include_result: bool,
+    ) -> Result<TaskInstance, sqlx::Error>;
 
     /// Update the status of a task
     async fn update_task_status(
@@ -53,20 +51,20 @@ pub trait TaskRepository: Clone {
     ) -> Result<TaskResult, sqlx::Error>;
 }
 
-/// Repository trait for managing task type records in the database
+/// Repository trait for managing task kind records in the database
 ///
-/// Provides methods for registering and managing task types that workers can process.
-/// Task types define the different kinds of work that can be performed in the system.
+/// Provides methods for registering and managing task kinds that workers can process.
+/// Task kinds define the different kinds of work that can be performed in the system.
 #[async_trait]
-pub trait TaskTypeRepository: Clone {
-    /// Register a new task type
-    async fn put_task_type(&self, task_type: &TaskKind) -> Result<(), sqlx::Error>;
+pub trait TaskKindRepository: Clone {
+    /// Get or create a task kind by name
+    ///
+    /// If a task kind with the given name already exists, returns that task kind.
+    /// Otherwise creates a new task kind with the given name.
+    async fn get_or_create_task_kind(&self, name: String) -> Result<TaskKind, sqlx::Error>;
 
-    /// Get all registered task types
-    async fn get_all_task_types(&self) -> Result<Vec<TaskKind>, sqlx::Error>;
-
-    /// Get a task type by its ID
-    async fn get_task_type_by_id(&self, id: &Uuid) -> Result<TaskKind, sqlx::Error>;
+    /// Get all registered task kinds
+    async fn get_all_task_kinds(&self) -> Result<Vec<TaskKind>, sqlx::Error>;
 }
 
 /// Repository trait for managing worker records in the database

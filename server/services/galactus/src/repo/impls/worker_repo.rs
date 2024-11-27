@@ -38,21 +38,21 @@ impl WorkerRepository for PgWorkerRepository {
         .execute(&mut *txn)
         .await?;
 
-        // Clear existing task types
+        // Clear existing task kinds
         sqlx::query!(
             r#"
-            DELETE FROM worker_task_types WHERE worker_id = $1
+            DELETE FROM worker_task_kinds WHERE worker_id = $1
             "#,
             id
         )
         .execute(&mut *txn)
         .await?;
 
-        // Insert new task types
+        // Insert new task kinds
         for task_kind in &task_kinds {
             sqlx::query!(
                 r#"
-                INSERT INTO worker_task_types (worker_id, task_type_id)
+                INSERT INTO worker_task_kinds (worker_id, task_kind_id)
                 VALUES ($1, $2)
                 "#,
                 id,
@@ -92,11 +92,11 @@ impl WorkerRepository for PgWorkerRepository {
         .fetch_one(&self.core.pool)
         .await?;
 
-        let task_types = sqlx::query!(
+        let task_kinds = sqlx::query!(
             r#"
             SELECT tt.id, tt.name 
-            FROM task_types tt
-            JOIN worker_task_types wtt ON wtt.task_type_id = tt.id
+            FROM task_kinds tt
+            JOIN worker_task_kinds wtt ON wtt.task_kind_id = tt.id
             WHERE wtt.worker_id = $1
             "#,
             id
@@ -108,7 +108,7 @@ impl WorkerRepository for PgWorkerRepository {
             id: *id,
             name: worker.name,
             registered_at: worker.registered_at.into(),
-            task_kind: task_types
+            task_kind: task_kinds
                 .into_iter()
                 .map(|tt| TaskKind {
                     id: tt.id,
@@ -131,11 +131,11 @@ impl WorkerRepository for PgWorkerRepository {
         let mut result = Vec::new();
 
         for worker in workers {
-            let task_types = sqlx::query!(
+            let task_kinds = sqlx::query!(
                 r#"
                 SELECT tt.id, tt.name 
-                FROM task_types tt
-                JOIN worker_task_types wtt ON wtt.task_type_id = tt.id
+                FROM task_kinds tt
+                JOIN worker_task_kinds wtt ON wtt.task_kind_id = tt.id
                 WHERE wtt.worker_id = $1
                 "#,
                 worker.id
@@ -147,7 +147,7 @@ impl WorkerRepository for PgWorkerRepository {
                 id: worker.id,
                 name: worker.name,
                 registered_at: worker.registered_at.into(),
-                task_kind: task_types
+                task_kind: task_kinds
                     .into_iter()
                     .map(|tt| TaskKind {
                         id: tt.id,
@@ -212,7 +212,7 @@ mod tests {
     use super::*;
     use crate::{
         init_test_logger,
-        repo::{PgRepositoryCore, PgTaskTypeRepository, TaskTypeRepository},
+        repo::{PgRepositoryCore, PgTaskKindRepository, TaskKindRepository},
     };
     use sqlx::PgPool;
 
@@ -226,20 +226,19 @@ mod tests {
     #[sqlx::test(migrator = "db_common::MIGRATOR")]
     async fn register_and_get_worker(pool: PgPool) {
         let repo = PgWorkerRepository::new(PgRepositoryCore::new(pool.clone()));
-        let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
+        let task_kind_repo = PgTaskKindRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type = TaskKind {
-            id: Uuid::new_v4(),
-            name: "Test Task".to_string(),
-        };
-        task_type_repo.put_task_type(&task_type).await.unwrap();
+        let task_kind = task_kind_repo
+            .get_or_create_task_kind("Test task".to_string())
+            .await
+            .unwrap();
 
         let worker_id = Uuid::new_v4();
         let worker = repo
             .register_worker(
                 worker_id,
                 "Test Worker".to_string(),
-                vec![task_type.clone()],
+                vec![task_kind.clone()],
             )
             .await
             .unwrap();
@@ -247,7 +246,7 @@ mod tests {
         assert_eq!(worker.id, worker_id);
         assert_eq!(worker.name, "Test Worker");
         assert_eq!(worker.task_kind.len(), 1);
-        assert_eq!(worker.task_kind[0].id, task_type.id);
+        assert_eq!(worker.task_kind[0].id, task_kind.id);
         assert!(worker.active);
 
         let retrieved = repo.get_worker_by_id(&worker_id).await.unwrap();
@@ -260,19 +259,18 @@ mod tests {
     #[sqlx::test(migrator = "db_common::MIGRATOR")]
     async fn get_all_workers(pool: PgPool) {
         let repo = PgWorkerRepository::new(PgRepositoryCore::new(pool.clone()));
-        let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
+        let task_kind_repo = PgTaskKindRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type = TaskKind {
-            id: Uuid::new_v4(),
-            name: "Test Task".to_string(),
-        };
-        task_type_repo.put_task_type(&task_type).await.unwrap();
+        let task_kind = task_kind_repo
+            .get_or_create_task_kind("Test task".to_string())
+            .await
+            .unwrap();
 
         let worker1 = repo
             .register_worker(
                 Uuid::new_v4(),
                 "Worker 1".to_string(),
-                vec![task_type.clone()],
+                vec![task_kind.clone()],
             )
             .await
             .unwrap();
@@ -281,7 +279,7 @@ mod tests {
             .register_worker(
                 Uuid::new_v4(),
                 "Worker 2".to_string(),
-                vec![task_type.clone()],
+                vec![task_kind.clone()],
             )
             .await
             .unwrap();
@@ -292,35 +290,33 @@ mod tests {
         assert!(all_workers.iter().any(|w| w.id == worker2.id));
     }
 
-    /// Registers a worker and then updates its name and task types
+    /// Registers a worker and then updates its name and task kinds
     #[sqlx::test(migrator = "db_common::MIGRATOR")]
     async fn update_worker(pool: PgPool) {
         let repo = PgWorkerRepository::new(PgRepositoryCore::new(pool.clone()));
-        let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
+        let task_kind_repo = PgTaskKindRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type1 = TaskKind {
-            id: Uuid::new_v4(),
-            name: "Task 1".to_string(),
-        };
-        let task_type2 = TaskKind {
-            id: Uuid::new_v4(),
-            name: "Task 2".to_string(),
-        };
-        task_type_repo.put_task_type(&task_type1).await.unwrap();
-        task_type_repo.put_task_type(&task_type2).await.unwrap();
-
-        let worker_id = Uuid::new_v4();
-        let worker = repo
-            .register_worker(worker_id, "Original Name".to_string(), vec![task_type1])
+        let task_kind1 = task_kind_repo
+            .get_or_create_task_kind("Task 1".to_string())
+            .await
+            .unwrap();
+        let task_kind2 = task_kind_repo
+            .get_or_create_task_kind("Task 2".to_string())
             .await
             .unwrap();
 
-        // Update name and task types
+        let worker_id = Uuid::new_v4();
+        let worker = repo
+            .register_worker(worker_id, "Original Name".to_string(), vec![task_kind1])
+            .await
+            .unwrap();
+
+        // Update name and task kinds
         let updated = repo
             .register_worker(
                 worker_id,
                 "Updated Name".to_string(),
-                vec![task_type2.clone()],
+                vec![task_kind2.clone()],
             )
             .await
             .unwrap();
@@ -328,23 +324,22 @@ mod tests {
         assert_eq!(updated.id, worker_id);
         assert_eq!(updated.name, "Updated Name");
         assert_eq!(updated.task_kind.len(), 1);
-        assert_eq!(updated.task_kind[0].id, task_type2.id);
+        assert_eq!(updated.task_kind[0].id, task_kind2.id);
     }
 
     /// Registers a worker and then updates its active status
     #[sqlx::test(migrator = "db_common::MIGRATOR")]
     async fn worker_active_status(pool: PgPool) {
         let repo = PgWorkerRepository::new(PgRepositoryCore::new(pool.clone()));
-        let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
+        let task_kind_repo = PgTaskKindRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type = TaskKind {
-            id: Uuid::new_v4(),
-            name: "Test Task".to_string(),
-        };
-        task_type_repo.put_task_type(&task_type).await.unwrap();
+        let task_kind = task_kind_repo
+            .get_or_create_task_kind("Test task".to_string())
+            .await
+            .unwrap();
 
         let worker = repo
-            .register_worker(Uuid::new_v4(), "Test Worker".to_string(), vec![task_type])
+            .register_worker(Uuid::new_v4(), "Test Worker".to_string(), vec![task_kind])
             .await
             .unwrap();
         assert!(worker.active);
@@ -358,16 +353,15 @@ mod tests {
     #[sqlx::test(migrator = "db_common::MIGRATOR")]
     async fn worker_heartbeat(pool: PgPool) {
         let repo = PgWorkerRepository::new(PgRepositoryCore::new(pool.clone()));
-        let task_type_repo = PgTaskTypeRepository::new(PgRepositoryCore::new(pool));
+        let task_kind_repo = PgTaskKindRepository::new(PgRepositoryCore::new(pool));
 
-        let task_type = TaskKind {
-            id: Uuid::new_v4(),
-            name: "Test Task".to_string(),
-        };
-        task_type_repo.put_task_type(&task_type).await.unwrap();
+        let task_kind = task_kind_repo
+            .get_or_create_task_kind("Test task".to_string())
+            .await
+            .unwrap();
 
         let worker = repo
-            .register_worker(Uuid::new_v4(), "Test Worker".to_string(), vec![task_type])
+            .register_worker(Uuid::new_v4(), "Test Worker".to_string(), vec![task_kind])
             .await
             .unwrap();
 
