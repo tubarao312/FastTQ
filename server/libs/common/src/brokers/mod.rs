@@ -5,6 +5,7 @@ pub mod redis;
 use core::BrokerCore;
 use rabbit::RabbitBroker;
 use redis::RedisBroker;
+use uuid::Uuid;
 
 use std::sync::Arc;
 
@@ -22,6 +23,7 @@ async fn create_broker_connection(
     }
 }
 
+#[derive(Clone)]
 pub struct Broker {
     pub uri: String,
     pub broker: Arc<dyn BrokerCore + Send + Sync>,
@@ -56,7 +58,10 @@ impl Broker {
         Ok(())
     }
 
-    pub async fn publish(&mut self, task: TaskInstance) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn publish(
+        &mut self,
+        task: &TaskInstance,
+    ) -> Result<Uuid, Box<dyn std::error::Error>> {
         let worker = (0..self.workers.len())
             // Cycle the workers list in a round robin fashion
             .map(|_| {
@@ -65,7 +70,7 @@ impl Broker {
                 cur_worker
             })
             // Find the first worker that can handle the task
-            .find(|cur_worker| cur_worker.can_handle(&task))
+            .find(|cur_worker| cur_worker.can_handle(task))
             .ok_or_else(|| "No available worker")?;
 
         // Convert input data to bytes
@@ -76,7 +81,7 @@ impl Broker {
             .publish_message(&task.task_kind.name, &worker.name, &payload)
             .await?;
 
-        Ok(())
+        Ok(worker.id)
     }
 }
 
@@ -232,7 +237,7 @@ mod tests {
         }
 
         for task in tasks {
-            broker.publish(task).await.unwrap();
+            broker.publish(&task).await.unwrap();
         }
     }
 
@@ -258,7 +263,7 @@ mod tests {
             result: None,
         };
 
-        let result = broker.publish(task).await;
+        let result = broker.publish(&task).await;
         assert!(result.is_err());
     }
 }
