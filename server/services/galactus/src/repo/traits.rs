@@ -20,6 +20,13 @@ pub trait TaskInstanceRepository: Clone {
         input_data: Option<serde_json::Value>,
     ) -> Result<TaskInstance, sqlx::Error>;
 
+    /// Assign a task to a worker
+    async fn assign_task_to_worker(
+        &self,
+        task_id: &Uuid,
+        worker_id: &Uuid,
+    ) -> Result<(), sqlx::Error>;
+
     /// Get a task by its ID
     async fn get_task_by_id(
         &self,

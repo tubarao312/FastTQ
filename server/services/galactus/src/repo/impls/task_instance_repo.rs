@@ -69,6 +69,27 @@ impl TaskInstanceRepository for PgTaskInstanceRepository {
         Ok(task)
     }
 
+    async fn assign_task_to_worker(
+        &self,
+        task_id: &Uuid,
+        worker_id: &Uuid,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            r#"
+            UPDATE tasks 
+            SET assigned_to = $1, status = $2
+            WHERE id = $3
+            "#,
+            worker_id,
+            String::from(TaskStatus::Queued),
+            task_id
+        )
+        .execute(&self.core.pool)
+        .await?;
+
+        Ok(())
+    }
+
     async fn get_task_by_id(
         &self,
         id: &Uuid,
@@ -245,16 +266,23 @@ impl TaskInstanceRepository for PgTaskInstanceRepository {
 
 #[cfg(test)]
 mod tests {
+    use sqlx::PgPool;
+    use uuid::Uuid;
+
+    use common::TaskStatus;
+
+    use super::*;
     use crate::repo::{
         PgRepositoryCore, PgTaskKindRepository, PgWorkerRepository, TaskKindRepository,
         WorkerRepository,
     };
+    use crate::testing::test::init_test_logger;
 
-    use super::*;
-    use common::TaskStatus;
-    use sqlx::PgPool;
-    use std::time::SystemTime;
-    use uuid::Uuid;
+    // This runs before any test in this module
+    #[ctor::ctor]
+    fn init() {
+        init_test_logger();
+    }
 
     /// Creates a task and then retrieves it by id
     #[sqlx::test(migrator = "db_common::MIGRATOR")]
@@ -420,5 +448,36 @@ mod tests {
             .unwrap();
         let task = repo.get_task_by_id(&task.id, false).await.unwrap();
         assert_eq!(task.status, TaskStatus::Completed);
+    }
+
+    /// Tests assigning a task to a worker
+    #[sqlx::test(migrator = "db_common::MIGRATOR")]
+    async fn test_assign_task_to_worker(pool: PgPool) {
+        let core = PgRepositoryCore::new(pool.clone());
+        let repo = PgTaskInstanceRepository::new(core.clone());
+        let task_kind_repo = PgTaskKindRepository::new(core.clone());
+        let worker_repo = PgWorkerRepository::new(core);
+
+        let task_kind = task_kind_repo
+            .get_or_create_task_kind("Test Task".to_string())
+            .await
+            .unwrap();
+        let task = repo.create_task(task_kind.id, None).await.unwrap();
+        let worker_id = Uuid::new_v4();
+        worker_repo
+            .register_worker(
+                worker_id,
+                "Test Worker".to_string(),
+                vec![task_kind.clone()],
+            )
+            .await
+            .unwrap();
+
+        repo.assign_task_to_worker(&task.id, &worker_id)
+            .await
+            .unwrap();
+        let updated = repo.get_task_by_id(&task.id, false).await.unwrap();
+        assert_eq!(updated.assigned_to, Some(worker_id));
+        assert_eq!(updated.status, TaskStatus::Queued);
     }
 }
