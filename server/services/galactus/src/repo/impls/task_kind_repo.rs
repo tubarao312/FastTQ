@@ -61,6 +61,13 @@ impl TaskKindRepository for PgTaskKindRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::testing::test::init_test_logger;
+
+    // This runs before any test in this module
+    #[ctor::ctor]
+    fn init() {
+        init_test_logger();
+    }
 
     /// Creates a new task kind and verifies it's created correctly
     #[sqlx::test(migrator = "db_common::MIGRATOR")]
