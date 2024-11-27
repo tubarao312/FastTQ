@@ -2,25 +2,16 @@ mod api;
 mod config;
 mod repo;
 
+use axum::{serve, Router};
 use std::sync::Arc;
-
-use config::Config;
 use tokio::net::TcpListener;
 
-use axum::{serve, Router};
-
 use common::brokers::Broker;
+use config::Config;
 use db_common::db::DatabasePools;
-use repo::{
-    PgRepositoryCore, PgTaskRepository, PgTaskTypeRepository, PgWorkerRepository, TaskRepository,
-    TaskTypeRepository, WorkerRepository,
-};
-
+use repo::{PgRepositoryCore, PgTaskInstanceRepository, PgTaskKindRepository, PgWorkerRepository};
 use tracing::info;
 use tracing_subscriber;
-
-/// Initializes the logger with the appropriate formatting
-use std::sync::Arc;
 
 async fn setup_logger() {
     tracing_subscriber::fmt()
@@ -39,8 +30,8 @@ async fn setup_logger() {
 /// Contains all the repositories used for the application logic
 #[derive(Clone)]
 pub struct AppState {
-    pub task_repository: PgTaskRepository,
-    pub task_type_repository: PgTaskTypeRepository,
+    pub task_repository: PgTaskInstanceRepository,
+    pub task_kind_repository: PgTaskKindRepository,
     pub worker_repository: PgWorkerRepository,
     pub broker: Arc<Broker>,
 }
@@ -54,8 +45,8 @@ async fn setup_app_state(config: Config) -> AppState {
 
     // Setup the repositories
     let core = PgRepositoryCore::new(db_pools.reader);
-    let task_repository: PgTaskRepository = PgTaskRepository::new(core.clone());
-    let task_type_repository = PgTaskTypeRepository::new(core.clone());
+    let task_repository = PgTaskInstanceRepository::new(core.clone());
+    let task_kind_repository = PgTaskKindRepository::new(core.clone());
     let worker_repository = PgWorkerRepository::new(core);
 
     // Setup the broker
@@ -67,7 +58,7 @@ async fn setup_app_state(config: Config) -> AppState {
 
     AppState {
         task_repository,
-        task_type_repository,
+        task_kind_repository,
         worker_repository,
         broker,
     }
