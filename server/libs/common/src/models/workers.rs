@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
-use std::time::SystemTime;
+use utoipa::ToSchema;
 use uuid::Uuid;
+
+use time::OffsetDateTime;
 
 use super::TaskInstance;
 use crate::models::TaskKind;
@@ -8,11 +10,12 @@ use crate::models::TaskKind;
 /// A worker that can execute tasks after receiving them.
 /// We know that it can receive those tasks from its list of capabilities.
 /// A worker must register itself with its capabilities to be able to receive tasks.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct Worker {
     pub id: Uuid,
     pub name: String,
-    pub registered_at: SystemTime,
+    #[serde(serialize_with = "crate::models::serialize_datetime")]
+    pub registered_at: OffsetDateTime,
     pub task_kind: Vec<TaskKind>,
     pub active: bool,
 }
@@ -22,7 +25,7 @@ impl Worker {
         Worker {
             id: Uuid::new_v4(),
             name,
-            registered_at: SystemTime::now(),
+            registered_at: OffsetDateTime::now_utc(),
             task_kind,
             active: true,
         }
@@ -38,6 +41,8 @@ impl Worker {
 mod test {
     use super::*;
 
+    use time::OffsetDateTime;
+
     #[test]
     fn test_worker_can_handle() {
         let task_kind1 = TaskKind::new("task1".to_string());
@@ -48,17 +53,19 @@ mod test {
             id: Uuid::new_v4(),
             task_kind: task_kind1.clone(),
             status: crate::TaskStatus::Queued,
-            created_at: SystemTime::now(),
+            created_at: OffsetDateTime::now_utc(),
             input_data: None,
             assigned_to: None,
+            result: None,
         };
         let task2 = TaskInstance {
             id: Uuid::new_v4(),
             task_kind: task_kind2.clone(),
             status: crate::TaskStatus::Queued,
-            created_at: SystemTime::now(),
+            created_at: OffsetDateTime::now_utc(),
             input_data: None,
             assigned_to: None,
+            result: None,
         };
 
         assert!(worker.can_handle(&task1));

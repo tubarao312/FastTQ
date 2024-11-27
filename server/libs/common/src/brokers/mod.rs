@@ -86,7 +86,7 @@ mod tests {
     use crate::models::TaskKind;
     use crate::TaskStatus;
     use async_trait::async_trait;
-    use std::time::SystemTime;
+    use time::OffsetDateTime;
     use uuid::Uuid;
 
     // Mock implementations for BaseBroker, RedisBroker, and RabbitBroker
@@ -119,21 +119,21 @@ mod tests {
             Worker {
                 id: Uuid::new_v4(),
                 name: "worker1".to_string(),
-                registered_at: SystemTime::now(),
+                registered_at: OffsetDateTime::now_utc(),
                 task_kind: vec![task_kinds[0].clone()],
                 active: true,
             },
             Worker {
                 id: Uuid::new_v4(),
                 name: "worker2".to_string(),
-                registered_at: SystemTime::now(),
+                registered_at: OffsetDateTime::now_utc(),
                 task_kind: vec![task_kinds[1].clone()],
                 active: true,
             },
             Worker {
                 id: Uuid::new_v4(),
                 name: "worker3".to_string(),
-                registered_at: SystemTime::now(),
+                registered_at: OffsetDateTime::now_utc(),
                 task_kind: task_kinds,
                 active: true,
             },
@@ -147,24 +147,27 @@ mod tests {
                 task_kind: task_kinds[0].clone(),
                 input_data: Some(serde_json::json!({"key": "value"})),
                 status: TaskStatus::Pending,
-                created_at: SystemTime::now(),
+                created_at: OffsetDateTime::now_utc(),
                 assigned_to: None,
+                result: None,
             },
             TaskInstance {
                 id: Uuid::new_v4(),
                 task_kind: task_kinds[1].clone(),
                 input_data: Some(serde_json::json!({"key": "value"})),
                 status: TaskStatus::Pending,
-                created_at: SystemTime::now(),
+                created_at: OffsetDateTime::now_utc(),
                 assigned_to: None,
+                result: None,
             },
             TaskInstance {
                 id: Uuid::new_v4(),
                 task_kind: task_kinds[1].clone(),
                 input_data: Some(serde_json::json!({"key": "value"})),
                 status: TaskStatus::Pending,
-                created_at: SystemTime::now(),
+                created_at: OffsetDateTime::now_utc(),
                 assigned_to: None,
+                result: None,
             },
         ]
     }
@@ -250,8 +253,9 @@ mod tests {
             task_kind: TaskKind::new("task3".to_string()),
             input_data: Some(serde_json::json!({"key": "value"})),
             status: TaskStatus::Pending,
-            created_at: SystemTime::now(),
+            created_at: OffsetDateTime::now_utc(),
             assigned_to: None,
+            result: None,
         };
 
         let result = broker.publish(task).await;
