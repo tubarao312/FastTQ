@@ -50,6 +50,20 @@ impl WorkerRepository for PgWorkerRepository {
 
         // Insert new task kinds
         for task_kind in &task_kinds {
+            // Create task kind if it doesn't exist
+            sqlx::query!(
+                r#"
+                INSERT INTO task_kinds (id, name)
+                VALUES ($1, $2)
+                ON CONFLICT (id) DO NOTHING
+                "#,
+                task_kind.id,
+                task_kind.name
+            )
+            .execute(&mut *txn)
+            .await?;
+
+            // Link worker to task kind
             sqlx::query!(
                 r#"
                 INSERT INTO worker_task_kinds (worker_id, task_kind_id)
@@ -211,8 +225,8 @@ impl WorkerRepository for PgWorkerRepository {
 mod tests {
     use super::*;
     use crate::{
-        init_test_logger,
         repo::{PgRepositoryCore, PgTaskKindRepository, TaskKindRepository},
+        testing::test::init_test_logger,
     };
     use sqlx::PgPool;
 
