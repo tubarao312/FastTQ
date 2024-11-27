@@ -14,7 +14,10 @@ use crate::models::TaskKind;
 pub struct Worker {
     pub id: Uuid,
     pub name: String,
-    #[serde(serialize_with = "crate::models::serialize_datetime")]
+    #[serde(
+        serialize_with = "crate::models::serialize_datetime",
+        deserialize_with = "crate::models::deserialize_datetime"
+    )]
     pub registered_at: OffsetDateTime,
     pub task_kind: Vec<TaskKind>,
     pub active: bool,

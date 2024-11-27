@@ -75,7 +75,10 @@ pub struct TaskInstance {
     pub task_kind: TaskKind,
     pub input_data: Option<serde_json::Value>,
     pub status: TaskStatus,
-    #[serde(serialize_with = "crate::models::serialize_datetime")]
+    #[serde(
+        serialize_with = "crate::models::serialize_datetime",
+        deserialize_with = "crate::models::deserialize_datetime"
+    )]
     pub created_at: OffsetDateTime,
     pub assigned_to: Option<Uuid>,
     pub result: Option<TaskResult>,
