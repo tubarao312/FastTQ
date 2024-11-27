@@ -8,7 +8,8 @@ use crate::AppState;
     openapi,
     crate::api::tasks::get_task_by_id,
     crate::api::tasks::create_task,
-    crate::api::tasks::update_task_status
+    crate::api::tasks::update_task_status,
+    crate::api::tasks::update_task_result,
 ))]
 struct ApiDoc;
 
