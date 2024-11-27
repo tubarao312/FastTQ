@@ -13,8 +13,8 @@ use crate::AppState;
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/workers", post(register_worker))
-        .route("/workers/:id/heartbeat", put(heartbeat))
         .route("/workers/:id", delete(unregister_worker))
+    // .route("/workers/:id/heartbeat", put(heartbeat))
 }
 
 /// Register a new worker
@@ -29,20 +29,6 @@ async fn register_worker(
     Json(worker): Json<Worker>,
 ) -> Result<Json<Worker>, StatusCode> {
     todo!("Implement worker registration")
-}
-
-/// Update worker heartbeat timestamp
-///
-/// # Arguments
-/// * `id` - UUID of the worker to update heartbeat for
-///
-/// # Returns
-/// Returns a JSON response containing the updated worker
-async fn heartbeat(
-    State(state): State<AppState>,
-    Path(id): Path<Uuid>,
-) -> Result<Json<Worker>, StatusCode> {
-    todo!("Implement worker heartbeat")
 }
 
 /// Unregister an existing worker
