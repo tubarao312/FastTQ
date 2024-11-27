@@ -1,18 +1,23 @@
 mod api;
 mod config;
 mod repo;
+mod testing;
+
+use std::sync::Arc;
 
 use axum::{serve, Router};
-use std::sync::Arc;
+use sqlx::PgPool;
 use tokio::net::TcpListener;
-
-use common::brokers::Broker;
-use config::Config;
-use db_common::db::DatabasePools;
-use repo::{PgRepositoryCore, PgTaskInstanceRepository, PgTaskKindRepository, PgWorkerRepository};
+use tokio::sync::RwLock;
 use tracing::info;
 use tracing_subscriber;
 
+use common::brokers::Broker;
+
+use config::Config;
+use repo::{PgRepositoryCore, PgTaskInstanceRepository, PgTaskKindRepository, PgWorkerRepository};
+
+/// Initializes the logger
 async fn setup_logger() {
     tracing_subscriber::fmt()
         .with_thread_ids(true)
@@ -27,41 +32,66 @@ async fn setup_logger() {
 
 /// Represents the shared application state that can be accessed by all routes
 ///
-/// Contains all the repositories used for the application logic
+/// Contains all the repositories used for the application logic and the broker
 #[derive(Clone)]
 pub struct AppState {
     pub task_repository: PgTaskInstanceRepository,
     pub task_kind_repository: PgTaskKindRepository,
     pub worker_repository: PgWorkerRepository,
-    pub broker: Arc<Broker>,
+    pub broker: Arc<RwLock<Broker>>,
+}
+
+/// Creates database connection pools
+///
+/// # Arguments
+///
+/// * `config` - The configuration for the database
+async fn setup_db_pools(config: &Config) -> PgPool {
+    PgPool::connect(&config.db_reader_url).await.unwrap()
+}
+
+/// Initializes the broker
+///
+/// # Arguments
+///
+/// * `config` - The configuration for the broker   
+async fn setup_broker(config: &Config) -> Broker {
+    Broker::new(&config.broker_addr)
+        .await
+        .expect("Failed to initialize broker")
 }
 
 /// Initializes the application state based on the given configuration
-async fn setup_app_state(config: Config) -> AppState {
-    // Setup the database pools
-    let db_pools = DatabasePools::new(&config.db_reader_url, &config.db_writer_url)
-        .await
-        .unwrap();
-
+///
+/// # Arguments
+///
+/// * `db_pools` - The database connection pools
+/// * `broker` - The broker
+async fn setup_app_state(db_pools: PgPool, broker: Broker) -> AppState {
     // Setup the repositories
-    let core = PgRepositoryCore::new(db_pools.reader);
+    let core = PgRepositoryCore::new(db_pools.clone());
     let task_repository = PgTaskInstanceRepository::new(core.clone());
     let task_kind_repository = PgTaskKindRepository::new(core.clone());
-    let worker_repository = PgWorkerRepository::new(core);
-
-    // Setup the broker
-    let broker = Arc::new(
-        Broker::new(&config.broker_addr)
-            .await
-            .expect("Failed to initialize broker"),
-    );
+    let worker_repository = PgWorkerRepository::new(core.clone());
 
     AppState {
         task_repository,
         task_kind_repository,
         worker_repository,
-        broker,
+        broker: Arc::new(RwLock::new(broker)),
     }
+}
+
+/// Initializes the application router
+///
+/// # Arguments
+///
+/// * `db_pools` - The database connection pools
+/// * `broker` - The broker
+async fn setup_app(db_pools: PgPool, broker: Broker) -> Router {
+    let app_state = setup_app_state(db_pools, broker).await;
+    info!("App state created");
+    Router::new().merge(api::routes()).with_state(app_state)
 }
 
 #[tokio::main]
@@ -71,34 +101,33 @@ async fn main() {
     // Setup the logger
     setup_logger().await;
 
-    info!("Database pools initialized");
+    info!("Logger initialized");
 
-    let app_state = setup_app_state(config).await;
+    // Setup the database pools
+    let db_pools = setup_db_pools(&config).await;
 
-    info!("App state initialized");
+    info!("Database pools created");
+
+    // Setup the broker
+    let broker = setup_broker(&config).await;
+
+    info!("Broker created");
 
     // Setup the router
-    let app = Router::new().merge(api::routes()).with_state(app_state);
+    let app = setup_app(db_pools, broker).await;
 
-    info!("Router initialized");
+    info!("App router created");
 
     // Setup the listener and bind to the port
     let listener = TcpListener::bind("0.0.0.0:3000")
         .await
         .expect("Failed to bind to port");
 
-    info!("Listener initialized");
+    info!("Listener created");
+    info!("Serving app...");
 
     // Serve the app
     serve(listener, app.into_make_service())
         .await
         .expect("Failed to serve app");
-}
-
-#[cfg(test)]
-pub fn init_test_logger() {
-    let _ = tracing_subscriber::fmt()
-        .with_test_writer()
-        .with_max_level(tracing::Level::DEBUG)
-        .try_init();
 }
