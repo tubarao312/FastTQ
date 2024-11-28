@@ -176,7 +176,7 @@ impl WorkerRepository for PgWorkerRepository {
     }
 
     async fn set_worker_active(&self, worker_id: &Uuid, active: bool) -> Result<(), sqlx::Error> {
-        sqlx::query!(
+        let result = sqlx::query!(
             r#"
             UPDATE workers SET active = $1 WHERE id = $2
             "#,
@@ -185,6 +185,10 @@ impl WorkerRepository for PgWorkerRepository {
         )
         .execute(&self.core.pool)
         .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound);
+        }
 
         Ok(())
     }

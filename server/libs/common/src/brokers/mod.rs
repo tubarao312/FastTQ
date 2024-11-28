@@ -47,11 +47,11 @@ impl Broker {
         Ok(())
     }
 
-    pub fn remove_worker(&mut self, worker_name: &str) -> Result<(), Box<dyn std::error::Error>> {
-        let index = self
+    pub fn remove_worker(&mut self, worker_id: &Uuid) -> Result<(), Box<dyn std::error::Error>> {
+        let index: usize = self
             .workers
             .iter()
-            .position(|worker| worker.name == worker_name)
+            .position(|worker| worker.id == *worker_id)
             .unwrap();
         self.workers.remove(index);
 
@@ -218,7 +218,7 @@ mod tests {
             broker.register_worker(worker).unwrap();
         }
 
-        broker.remove_worker("worker1").unwrap();
+        broker.remove_worker(&workers[0].id).unwrap();
         assert_eq!(broker.workers.len(), 2);
     }
 
