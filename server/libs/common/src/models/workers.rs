@@ -44,8 +44,6 @@ impl Worker {
 mod test {
     use super::*;
 
-    use time::OffsetDateTime;
-
     #[test]
     fn test_worker_can_handle() {
         let task_kind1 = TaskKind::new("task1".to_string());
