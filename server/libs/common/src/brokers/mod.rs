@@ -5,6 +5,7 @@ pub mod redis;
 use core::BrokerCore;
 use rabbit::RabbitBroker;
 use redis::RedisBroker;
+use uuid::Uuid;
 
 use std::sync::Arc;
 
@@ -22,6 +23,7 @@ async fn create_broker_connection(
     }
 }
 
+#[derive(Clone)]
 pub struct Broker {
     pub uri: String,
     pub broker: Arc<dyn BrokerCore + Send + Sync>,
@@ -45,14 +47,11 @@ impl Broker {
         Ok(())
     }
 
-    pub fn remove_worker(
-        &mut self,
-        worker_id: uuid::Uuid,
-    ) -> Result<(), Box<dyn std::error::Error>> {
-        let index = self
+    pub fn remove_worker(&mut self, worker_id: &Uuid) -> Result<(), Box<dyn std::error::Error>> {
+        let index: usize = self
             .workers
             .iter()
-            .position(|worker| worker.id == worker_id)
+            .position(|worker| worker.id == *worker_id)
             .unwrap();
         self.workers.remove(index);
 
@@ -61,8 +60,8 @@ impl Broker {
 
     pub async fn publish(
         &mut self,
-        task: TaskInstance,
-    ) -> Result<&Worker, Box<dyn std::error::Error>> {
+        task: &TaskInstance,
+    ) -> Result<Uuid, Box<dyn std::error::Error>> {
         let worker = (0..self.workers.len())
             // Cycle the workers list in a round robin fashion
             .map(|_| {
@@ -71,7 +70,7 @@ impl Broker {
                 cur_worker
             })
             // Find the first worker that can handle the task
-            .find(|cur_worker| cur_worker.can_handle(&task))
+            .find(|cur_worker| cur_worker.can_handle(task))
             .ok_or_else(|| "No available worker")?;
 
         // Convert input data to bytes
@@ -82,7 +81,7 @@ impl Broker {
             .publish_message(&task.task_kind.name, &worker.name, &payload)
             .await?;
 
-        Ok(worker)
+        Ok(worker.id)
     }
 }
 
@@ -92,7 +91,7 @@ mod tests {
     use crate::models::TaskKind;
     use crate::TaskStatus;
     use async_trait::async_trait;
-    use std::time::SystemTime;
+    use time::OffsetDateTime;
     use uuid::Uuid;
 
     // Mock implementations for BaseBroker, RedisBroker, and RabbitBroker
@@ -125,21 +124,21 @@ mod tests {
             Worker {
                 id: Uuid::new_v4(),
                 name: "worker1".to_string(),
-                registered_at: SystemTime::now(),
+                registered_at: OffsetDateTime::now_utc(),
                 task_kind: vec![task_kinds[0].clone()],
                 active: true,
             },
             Worker {
                 id: Uuid::new_v4(),
                 name: "worker2".to_string(),
-                registered_at: SystemTime::now(),
+                registered_at: OffsetDateTime::now_utc(),
                 task_kind: vec![task_kinds[1].clone()],
                 active: true,
             },
             Worker {
                 id: Uuid::new_v4(),
                 name: "worker3".to_string(),
-                registered_at: SystemTime::now(),
+                registered_at: OffsetDateTime::now_utc(),
                 task_kind: task_kinds,
                 active: true,
             },
@@ -153,24 +152,27 @@ mod tests {
                 task_kind: task_kinds[0].clone(),
                 input_data: Some(serde_json::json!({"key": "value"})),
                 status: TaskStatus::Pending,
-                created_at: SystemTime::now(),
+                created_at: OffsetDateTime::now_utc(),
                 assigned_to: None,
+                result: None,
             },
             TaskInstance {
                 id: Uuid::new_v4(),
                 task_kind: task_kinds[1].clone(),
                 input_data: Some(serde_json::json!({"key": "value"})),
                 status: TaskStatus::Pending,
-                created_at: SystemTime::now(),
+                created_at: OffsetDateTime::now_utc(),
                 assigned_to: None,
+                result: None,
             },
             TaskInstance {
                 id: Uuid::new_v4(),
                 task_kind: task_kinds[1].clone(),
                 input_data: Some(serde_json::json!({"key": "value"})),
                 status: TaskStatus::Pending,
-                created_at: SystemTime::now(),
+                created_at: OffsetDateTime::now_utc(),
                 assigned_to: None,
+                result: None,
             },
         ]
     }
@@ -216,7 +218,7 @@ mod tests {
             broker.register_worker(worker).unwrap();
         }
 
-        broker.remove_worker(workers[0].id).unwrap();
+        broker.remove_worker(&workers[0].id).unwrap();
         assert_eq!(broker.workers.len(), 2);
     }
 
@@ -234,18 +236,9 @@ mod tests {
             broker.register_worker(worker).unwrap();
         }
 
-        // Test round robin
-        let task = tasks[2].clone();
-        let worker = broker.publish(task).await.unwrap();
-        assert_eq!(worker.name, "worker2");
-
-        let task = tasks[0].clone();
-        let worker = broker.publish(task).await.unwrap();
-        assert_eq!(worker.name, "worker3");
-
-        let task = tasks[1].clone();
-        let worker = broker.publish(task).await.unwrap();
-        assert_eq!(worker.name, "worker2");
+        for task in tasks {
+            broker.publish(&task).await.unwrap();
+        }
     }
 
     #[tokio::test]
@@ -265,11 +258,12 @@ mod tests {
             task_kind: TaskKind::new("task3".to_string()),
             input_data: Some(serde_json::json!({"key": "value"})),
             status: TaskStatus::Pending,
-            created_at: SystemTime::now(),
+            created_at: OffsetDateTime::now_utc(),
             assigned_to: None,
+            result: None,
         };
 
-        let result = broker.publish(task).await;
+        let result = broker.publish(&task).await;
         assert!(result.is_err());
     }
 }

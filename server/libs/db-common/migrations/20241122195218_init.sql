@@ -1,8 +1,8 @@
--- Task types ---------------------------------------------------------------------
+-- Task Kinds ---------------------------------------------------------------------
 -- NOTE: This is defined here because it is used in both workers and tasks tables.
 
--- Each task has a "type" which describes that class of task
-CREATE TABLE task_types (
+-- Each task has a "kind" which describes that class of task
+CREATE TABLE task_kinds (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
@@ -19,11 +19,11 @@ CREATE TABLE workers (
 );
 
 -- Mapping between workers and the tasks they can execute
-CREATE TABLE worker_task_types (
+CREATE TABLE worker_task_kinds (
     worker_id UUID NOT NULL REFERENCES workers(id),
-    task_type_id UUID NOT NULL REFERENCES task_types(id),
+    task_kind_id UUID NOT NULL REFERENCES task_kinds(id),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (worker_id, task_type_id)
+    PRIMARY KEY (worker_id, task_kind_id)
 );
 
 -- Heartbeats are regularly sent by the workers to indicate that they are still alive and kicking
@@ -50,7 +50,7 @@ CREATE TYPE task_status AS ENUM (
 -- Tasks are the actual task "instances" that are created and sent to workers
 CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    task_type_id UUID NOT NULL REFERENCES task_types(id),
+    task_kind_id UUID NOT NULL REFERENCES task_kinds(id),
     input_data JSONB,
     status TEXT NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -59,8 +59,7 @@ CREATE TABLE tasks (
 
 -- New task results table
 CREATE TABLE task_results (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    task_id UUID PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
     output_data JSONB,
     error_data JSONB,
     worker_id UUID NOT NULL REFERENCES workers(id),

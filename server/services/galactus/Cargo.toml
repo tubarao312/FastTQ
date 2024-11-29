@@ -12,7 +12,7 @@ dotenv = "0.15.0"
 futures = "0.3.31"
 tracing = "0.1.40"
 tokio = { version = "1.41.1", features = ["full"] }
-axum = "0.7.9"
+axum = { version = "0.7.9", features = ["macros"] }
 uuid = { version = "1.11.0", features = ["serde", "v4"] }
 sqlx = { version = "0.8.2", features = [
     "runtime-tokio",
@@ -21,10 +21,16 @@ sqlx = { version = "0.8.2", features = [
     "json",
     "time",
 ] }
+serde = { version = "1.0.215", features = ["derive"] }
 serde_json = "1.0.133"
 tracing-subscriber = "0.3.18"
+utoipa = { version = "5.2.0", features = ["axum_extras", "uuid"]}
+utoipa-axum = "0.1.2"
+time = { version = "0.3.36", features = ["serde"] }
+
 
 [dev-dependencies]
 ctor = "0.2.9"
+axum-test = "16.4.0"
 
 [build-dependencies]
