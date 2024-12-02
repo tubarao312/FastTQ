@@ -38,7 +38,7 @@ impl TaskKindRepository for PgTaskKindRepository {
         })
     }
 
-    async fn get_all_task_kinds(&self) -> Result<Vec<TaskKind>, sqlx::Error> {
+    async fn _get_all_task_kinds(&self) -> Result<Vec<TaskKind>, sqlx::Error> {
         let rows = sqlx::query!(
             r#"
             SELECT id, name FROM task_kinds
@@ -107,7 +107,7 @@ mod tests {
             .await
             .unwrap();
 
-        let all_kinds = repo.get_all_task_kinds().await.unwrap();
+        let all_kinds = repo._get_all_task_kinds().await.unwrap();
 
         assert_eq!(all_kinds.len(), 2);
         assert!(all_kinds.iter().any(|k| k.id == kind1.id));

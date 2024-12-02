@@ -59,7 +59,7 @@ impl TaskInstanceRepository for PgTaskInstanceRepository {
             input_data: row.input_data,
             status: row.status.into(),
             assigned_to: row.assigned_to,
-            created_at: row.created_at.into(),
+            created_at: row.created_at,
             result: None,
         };
 
@@ -130,7 +130,7 @@ impl TaskInstanceRepository for PgTaskInstanceRepository {
                 task_id: row.task_id,
                 worker_id: row.worker_id,
                 output_data: row.output_data,
-                created_at: row.created_at.into(),
+                created_at: row.created_at,
                 error_data: row.error_data,
             })
         } else {
@@ -146,7 +146,7 @@ impl TaskInstanceRepository for PgTaskInstanceRepository {
             input_data: row.input_data,
             status: row.status.into(),
             assigned_to: row.assigned_to,
-            created_at: row.created_at.into(),
+            created_at: row.created_at,
             result: task_result,
         })
     }
@@ -211,7 +211,7 @@ impl TaskInstanceRepository for PgTaskInstanceRepository {
             worker_id: result.worker_id,
             output_data: result.output_data,
             error_data: result.error_data,
-            created_at: result.created_at.into(),
+            created_at: result.created_at,
         })
     }
 
@@ -255,7 +255,7 @@ impl TaskInstanceRepository for PgTaskInstanceRepository {
             worker_id: result.worker_id,
             output_data: result.output_data,
             error_data: result.error_data,
-            created_at: result.created_at.into(),
+            created_at: result.created_at,
         })
     }
 }
@@ -357,7 +357,7 @@ mod tests {
 
         // Test getting results
         let task = repo.get_task_by_id(&task.id, true).await.unwrap();
-        assert_eq!(task.result.is_some(), true);
+        assert!(task.result.is_some());
         assert_eq!(task.result.unwrap().task_id, result.task_id);
     }
 

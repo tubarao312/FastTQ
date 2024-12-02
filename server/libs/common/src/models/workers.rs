@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
+use sqlx::types::Uuid;
 use utoipa::ToSchema;
-use uuid::Uuid;
 
 use time::OffsetDateTime;
 
@@ -41,10 +41,12 @@ impl Worker {
     }
 }
 
+#[cfg(test)]
 mod test {
-    use crate::models::workers::OffsetDateTime;
-    use crate::models::workers::{TaskInstance, TaskKind, Worker};
-    use uuid::Uuid;
+    use super::{TaskKind, Worker};
+    use crate::TaskInstance;
+    use sqlx::types::Uuid;
+    use time::OffsetDateTime;
 
     #[test]
     fn test_worker_can_handle() {

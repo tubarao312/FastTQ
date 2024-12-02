@@ -10,7 +10,6 @@ use common::brokers::Broker;
 use sqlx::PgPool;
 use tokio::sync::RwLock;
 use tracing::info;
-use tracing_subscriber;
 
 use config::Config;
 use repo::{PgRepositoryCore, PgTaskInstanceRepository, PgTaskKindRepository, PgWorkerRepository};
