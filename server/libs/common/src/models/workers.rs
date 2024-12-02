@@ -42,7 +42,7 @@ impl Worker {
 }
 
 mod test {
-    use super::*;
+    
 
     #[test]
     fn test_worker_can_handle() {
