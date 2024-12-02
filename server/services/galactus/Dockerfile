@@ -7,8 +7,8 @@ WORKDIR /server/services/galactus
 # Copy everything needed for dependency resolution and recipe creation
 COPY server/libs /server/libs
 COPY server/services/galactus/Cargo.toml .
-COPY server/services/galactus/.sqlx ./.sqlx
-COPY server/services/galactus/src ./src
+COPY server/services/galactus .
+
 # Generate the cargo-chef recipe
 RUN cargo chef prepare --recipe-path recipe.json
 # Cook the dependencies
@@ -22,12 +22,13 @@ ENV SQLX_OFFLINE=true
 COPY --from=chef /usr/local/cargo /usr/local/cargo
 COPY --from=chef /server/libs /server/libs
 COPY server/services/galactus/ .
+
 # Rebuild the application with the full source
 RUN cargo build --release
 RUN strip target/release/galactus
 
 # Stage 3: Create the runtime image
-FROM gcr.io/distroless/cc-debian12:latest AS release
+FROM gcr.io/distroless/cc-debian12:nonroot AS release
 WORKDIR /app
 # Copy the final binary
 COPY --from=builder /server/services/galactus/target/release/galactus .

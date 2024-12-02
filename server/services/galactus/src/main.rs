@@ -5,9 +5,8 @@ mod testing;
 
 use std::sync::Arc;
 
-use axum::{serve, Router};
+use axum::Router;
 use sqlx::PgPool;
-use tokio::net::TcpListener;
 use tokio::sync::RwLock;
 use tracing::info;
 use tracing_subscriber;
