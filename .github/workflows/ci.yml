@@ -91,14 +91,15 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Create test database and run migrations
+      - name: Set up database and run migrations
         run: |
           docker run --network host \
             -e DATABASE_URL=${DATABASE_URL} \
-            app-builder cargo sqlx database create
-          docker run --network host \
-            -e DATABASE_URL=${DATABASE_URL} \
-            app-builder cargo sqlx migrate run --source ./server/libs/db-common/migrations
+            app-builder /bin/bash -c "
+              cargo install sqlx-cli --no-default-features --features postgres &&
+              cargo sqlx database create &&
+              cargo sqlx migrate run --source ./server/libs/db-common/migrations
+            "
       - name: Run tests in container
         run: |
           docker run --network host \
