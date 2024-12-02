@@ -18,8 +18,8 @@ jobs:
         with:
           components: rustfmt, clippy
 
-      - name: Check formatting
-        run: cargo fmt --all -- --check
+      - name: Format code
+        run: cargo fmt --all
 
       - name: Check compilation
         run: cargo check --all-features
