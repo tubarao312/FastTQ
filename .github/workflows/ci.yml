@@ -103,10 +103,10 @@ jobs:
         run: |
           docker run --network host \
             -e DATABASE_URL=${DATABASE_URL} \
-            app-builder sqlx database create
+            app-builder cargo sqlx database create
           docker run --network host \
             -e DATABASE_URL=${DATABASE_URL} \
-            app-builder sqlx migrate run --source ./server/libs/db-common/migrations
+            app-builder cargo sqlx migrate run --source ./server/libs/db-common/migrations
       - name: Run tests in container
         run: |
           docker run --network host \
