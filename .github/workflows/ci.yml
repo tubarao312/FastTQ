@@ -14,6 +14,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -21,11 +31,8 @@ jobs:
       - name: Format code
         run: cargo fmt --all
 
-      - name: Check compilation
-        run: cargo check --all-features
-
       - name: Run clippy
-        run: cargo clippy --all-features -- -D warnings
+        run: cargo clippy --all-features --tests -- -D warnings
 
       - name: Install sqlx-cli
         run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
@@ -41,22 +48,7 @@ jobs:
             git config --global user.name 'GitHub Actions'
             git config --global user.email 'actions@github.com'
             git add .
-            CHANGES=""
-            git diff --cached --name-only | while read -r file; do
-              if [[ $file == .sqlx/* ]]; then
-                CHANGES="sqlx-data"
-              elif [[ $file == *.rs ]]; then
-                if grep -q "^[+-]" <(git diff --cached -U0 "$file") ; then
-                  if [[ -z $CHANGES ]]; then
-                    CHANGES="formatting"
-                  else
-                    CHANGES="$CHANGES and formatting"
-                  fi
-                fi
-              fi
-            done
-            
-            git commit -m "chore: automatic ${CHANGES} update"
+            git commit -m "chore: automatic formatting update"
             git push
           fi
 
