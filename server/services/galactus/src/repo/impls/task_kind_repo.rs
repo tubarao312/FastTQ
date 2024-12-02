@@ -59,6 +59,8 @@ impl TaskKindRepository for PgTaskKindRepository {
 
 #[cfg(test)]
 mod tests {
+    use sqlx::PgPool;
+
     use super::*;
     use crate::testing::test::init_test_logger;
 
