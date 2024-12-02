@@ -3,15 +3,14 @@ mod config;
 mod repo;
 mod testing;
 
-use std::sync::Arc;
+use std::{net::SocketAddr, sync::Arc};
 
 use axum::Router;
+use common::brokers::Broker;
 use sqlx::PgPool;
 use tokio::sync::RwLock;
 use tracing::info;
 use tracing_subscriber;
-
-use common::brokers::Broker;
 
 use config::Config;
 use repo::{PgRepositoryCore, PgTaskInstanceRepository, PgTaskKindRepository, PgWorkerRepository};
@@ -93,6 +92,28 @@ async fn setup_app(db_pools: PgPool, broker: Broker) -> Router {
     Router::new().merge(api::routes()).with_state(app_state)
 }
 
-fn main() {
-    println!("Hello from Galactus!");
+#[tokio::main]
+async fn main() {
+    let config = Config::new();
+
+    setup_logger().await;
+
+    info!("Starting Galactus");
+
+    let db_pools = setup_db_pools(&config).await;
+    info!("Database connection pools created");
+
+    let broker = setup_broker(&config).await;
+    info!("Broker initialized");
+
+    let app = setup_app(db_pools, broker).await;
+    info!("App created");
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    info!("Listening on {}", addr);
+
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    axum::serve(listener, app.into_make_service())
+        .await
+        .unwrap();
 }
