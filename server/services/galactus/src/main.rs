@@ -112,8 +112,6 @@ async fn main() {
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
     info!("Listening on {}", addr);
 
-    //
-
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
     axum::serve(listener, app.into_make_service())
         .await
