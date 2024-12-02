@@ -94,40 +94,6 @@ async fn setup_app(db_pools: PgPool, broker: Broker) -> Router {
     Router::new().merge(api::routes()).with_state(app_state)
 }
 
-#[tokio::main]
-async fn main() {
-    let config = Config::new();
-
-    // Setup the logger
-    setup_logger().await;
-
-    info!("Logger initialized");
-
-    // Setup the database pools
-    let db_pools = setup_db_pools(&config).await;
-
-    info!("Database pools created");
-
-    // Setup the broker
-    let broker = setup_broker(&config).await;
-
-    info!("Broker created");
-
-    // Setup the router
-    let app = setup_app(db_pools, broker).await;
-
-    info!("App router created");
-
-    // Setup the listener and bind to the port
-    let listener = TcpListener::bind("0.0.0.0:3000")
-        .await
-        .expect("Failed to bind to port");
-
-    info!("Listener created");
-    info!("Serving app...");
-
-    // Serve the app
-    serve(listener, app.into_make_service())
-        .await
-        .expect("Failed to serve app");
+fn main() {
+    println!("Hello from Galactus!");
 }

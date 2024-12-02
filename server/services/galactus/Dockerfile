@@ -1,40 +1,32 @@
-# Stage 1: Install cargo-chef
+# Stage 1: Install cargo-chef and build dependencies
 FROM rust:1.82.0 AS chef
 WORKDIR /server
 RUN cargo install cargo-chef
 
-# Stage 2: Plan the build with cargo-chef
-FROM chef AS planner
 WORKDIR /server/services/galactus
-# Copy only the manifest and libs for dependency resolution
+# Copy everything needed for dependency resolution and recipe creation
 COPY server/libs /server/libs
 COPY server/services/galactus/Cargo.toml .
-RUN mkdir src && echo "fn main() {}" > src/main.rs
+COPY server/services/galactus/.sqlx ./.sqlx
+COPY server/services/galactus/src ./src
 # Generate the cargo-chef recipe
 RUN cargo chef prepare --recipe-path recipe.json
-
-# Stage 3: Build dependencies
-FROM chef AS cacher
-WORKDIR /server/services/galactus
-# Copy the recipe and shared libs
-COPY --from=planner /server/services/galactus/recipe.json .
-COPY server/libs /server/libs
+# Cook the dependencies
 RUN cargo chef cook --release --recipe-path recipe.json
 
-# Stage 4: Build the application
-FROM rust:1.82.0 AS builder
+# Stage 2: Build the application
+FROM chef AS builder
 WORKDIR /server/services/galactus
-# Copy dependencies from previous stages
-COPY --from=cacher /usr/local/cargo /usr/local/cargo
-COPY --from=cacher /server/libs /server/libs
-COPY server/services/galactus/Cargo.toml .
-COPY server/services/galactus/src src
-COPY server/services/galactus/.sqlx .sqlx
+ENV SQLX_OFFLINE=true
+# Combine COPY commands
+COPY --from=chef /usr/local/cargo /usr/local/cargo
+COPY --from=chef /server/libs /server/libs
+COPY server/services/galactus/ .
 # Rebuild the application with the full source
 RUN cargo build --release
 RUN strip target/release/galactus
 
-# Stage 5: Create the runtime image
+# Stage 3: Create the runtime image
 FROM gcr.io/distroless/cc-debian12:latest AS release
 WORKDIR /app
 # Copy the final binary

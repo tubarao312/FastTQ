@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use common::models::TaskKind;
-use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::repo::{PgRepositoryCore, TaskKindRepository};

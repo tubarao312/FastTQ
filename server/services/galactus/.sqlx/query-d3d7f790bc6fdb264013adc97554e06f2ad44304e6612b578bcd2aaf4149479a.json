@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, name FROM task_types WHERE id = $1\n            ",
+  "query": "\n            INSERT INTO task_kinds (id, name)\n            VALUES ($1, $2)\n            ON CONFLICT (name) DO UPDATE SET name = $2\n            RETURNING id, name\n            ",
   "describe": {
     "columns": [
       {
@@ -16,7 +16,8 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Text"
       ]
     },
     "nullable": [
@@ -24,5 +25,5 @@
       false
     ]
   },
-  "hash": "bbe57622596e2d1dda9497592be7be0216a70c9464fe75818d502a2728c08bee"
+  "hash": "d3d7f790bc6fdb264013adc97554e06f2ad44304e6612b578bcd2aaf4149479a"
 }

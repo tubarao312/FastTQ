@@ -1,11 +1,8 @@
-use std::time::SystemTime;
-
 use async_trait::async_trait;
 use common::{
     models::{TaskInstance, TaskResult},
     TaskKind, TaskStatus,
 };
-use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::repo::{PgRepositoryCore, TaskInstanceRepository};
@@ -180,7 +177,6 @@ impl TaskInstanceRepository for PgTaskInstanceRepository {
         worker_id: &Uuid,
         error: serde_json::Value,
     ) -> Result<TaskResult, sqlx::Error> {
-        let now = SystemTime::now();
         let mut txn = self.core.pool.begin().await?;
 
         sqlx::query!(

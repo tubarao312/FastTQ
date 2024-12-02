@@ -42,7 +42,9 @@ impl Worker {
 }
 
 mod test {
-    
+    use crate::models::workers::OffsetDateTime;
+    use crate::models::workers::{TaskInstance, TaskKind, Worker};
+    use uuid::Uuid;
 
     #[test]
     fn test_worker_can_handle() {
