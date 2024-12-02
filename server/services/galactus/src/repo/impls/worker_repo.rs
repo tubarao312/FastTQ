@@ -90,13 +90,13 @@ impl WorkerRepository for PgWorkerRepository {
         Ok(Worker {
             id,
             name,
-            registered_at: row.registered_at.into(),
+            registered_at: row.registered_at,
             task_kind: task_kinds.clone(),
             active: row.active,
         })
     }
 
-    async fn get_worker_by_id(&self, id: &Uuid) -> Result<Worker, sqlx::Error> {
+    async fn _get_worker_by_id(&self, id: &Uuid) -> Result<Worker, sqlx::Error> {
         let worker = sqlx::query!(
             r#"
             SELECT name, registered_at, active FROM workers WHERE id = $1
@@ -121,7 +121,7 @@ impl WorkerRepository for PgWorkerRepository {
         Ok(Worker {
             id: *id,
             name: worker.name,
-            registered_at: worker.registered_at.into(),
+            registered_at: worker.registered_at,
             task_kind: task_kinds
                 .into_iter()
                 .map(|tt| TaskKind {
@@ -133,7 +133,7 @@ impl WorkerRepository for PgWorkerRepository {
         })
     }
 
-    async fn get_all_workers(&self) -> Result<Vec<Worker>, sqlx::Error> {
+    async fn _get_all_workers(&self) -> Result<Vec<Worker>, sqlx::Error> {
         let workers = sqlx::query!(
             r#"
             SELECT id, name, registered_at, active FROM workers
@@ -160,7 +160,7 @@ impl WorkerRepository for PgWorkerRepository {
             result.push(Worker {
                 id: worker.id,
                 name: worker.name,
-                registered_at: worker.registered_at.into(),
+                registered_at: worker.registered_at,
                 task_kind: task_kinds
                     .into_iter()
                     .map(|tt| TaskKind {
@@ -193,7 +193,7 @@ impl WorkerRepository for PgWorkerRepository {
         Ok(())
     }
 
-    async fn record_heartbeat(&self, worker_id: &Uuid) -> Result<(), sqlx::Error> {
+    async fn _record_heartbeat(&self, worker_id: &Uuid) -> Result<(), sqlx::Error> {
         sqlx::query!(
             r#"
             INSERT INTO worker_heartbeats (worker_id, heartbeat_time)
@@ -207,7 +207,7 @@ impl WorkerRepository for PgWorkerRepository {
         Ok(())
     }
 
-    async fn get_latest_heartbeat(&self, worker_id: &Uuid) -> Result<SystemTime, sqlx::Error> {
+    async fn _get_latest_heartbeat(&self, worker_id: &Uuid) -> Result<SystemTime, sqlx::Error> {
         let row = sqlx::query!(
             r#"
             SELECT heartbeat_time 
@@ -267,7 +267,7 @@ mod tests {
         assert_eq!(worker.task_kind[0].id, task_kind.id);
         assert!(worker.active);
 
-        let retrieved = repo.get_worker_by_id(&worker_id).await.unwrap();
+        let retrieved = repo._get_worker_by_id(&worker_id).await.unwrap();
         assert_eq!(worker.id, retrieved.id);
         assert_eq!(worker.name, retrieved.name);
         assert_eq!(worker.task_kind, retrieved.task_kind);
@@ -302,47 +302,65 @@ mod tests {
             .await
             .unwrap();
 
-        let all_workers = repo.get_all_workers().await.unwrap();
+        let all_workers = repo._get_all_workers().await.unwrap();
         assert_eq!(all_workers.len(), 2);
         assert!(all_workers.iter().any(|w| w.id == worker1.id));
         assert!(all_workers.iter().any(|w| w.id == worker2.id));
     }
 
-    /// Registers a worker and then updates its name and task kinds
+    /// Tests worker update functionality including name changes and task kind modifications
     #[sqlx::test(migrator = "db_common::MIGRATOR")]
     async fn update_worker(pool: PgPool) {
         let repo = PgWorkerRepository::new(PgRepositoryCore::new(pool.clone()));
         let task_kind_repo = PgTaskKindRepository::new(PgRepositoryCore::new(pool));
 
-        let task_kind1 = task_kind_repo
-            .get_or_create_task_kind("Task 1".to_string())
+        // Create two distinct task kinds
+        let coding_task = task_kind_repo
+            .get_or_create_task_kind("Coding".to_string())
             .await
             .unwrap();
-        let task_kind2 = task_kind_repo
-            .get_or_create_task_kind("Task 2".to_string())
+        let testing_task = task_kind_repo
+            .get_or_create_task_kind("Testing".to_string())
             .await
             .unwrap();
 
         let worker_id = Uuid::new_v4();
-        let worker = repo
-            .register_worker(worker_id, "Original Name".to_string(), vec![task_kind1])
-            .await
-            .unwrap();
 
-        // Update name and task kinds
-        let updated = repo
+        // Initial worker registration
+        let initial_worker = repo
             .register_worker(
                 worker_id,
-                "Updated Name".to_string(),
-                vec![task_kind2.clone()],
+                "Developer Bot".to_string(),
+                vec![coding_task.clone()],
             )
             .await
             .unwrap();
 
-        assert_eq!(updated.id, worker_id);
-        assert_eq!(updated.name, "Updated Name");
-        assert_eq!(updated.task_kind.len(), 1);
-        assert_eq!(updated.task_kind[0].id, task_kind2.id);
+        assert_eq!(initial_worker.name, "Developer Bot");
+        assert_eq!(initial_worker.task_kind.len(), 1);
+        assert_eq!(initial_worker.task_kind[0].id, coding_task.id);
+
+        // Update both name and task kinds
+        let updated_worker = repo
+            .register_worker(
+                worker_id,
+                "Test Bot".to_string(),
+                vec![testing_task.clone()],
+            )
+            .await
+            .unwrap();
+
+        // Verify the updates
+        assert_eq!(updated_worker.id, worker_id);
+        assert_eq!(updated_worker.name, "Test Bot");
+        assert_eq!(updated_worker.task_kind.len(), 1);
+        assert_eq!(updated_worker.task_kind[0].id, testing_task.id);
+
+        // Verify by fetching directly
+        let fetched_worker = repo._get_worker_by_id(&worker_id).await.unwrap();
+        assert_eq!(fetched_worker.name, "Test Bot");
+        assert_eq!(fetched_worker.task_kind.len(), 1);
+        assert_eq!(fetched_worker.task_kind[0].id, testing_task.id);
     }
 
     /// Registers a worker and then updates its active status
@@ -363,7 +381,7 @@ mod tests {
         assert!(worker.active);
 
         repo.set_worker_active(&worker.id, false).await.unwrap();
-        let updated = repo.get_worker_by_id(&worker.id).await.unwrap();
+        let updated = repo._get_worker_by_id(&worker.id).await.unwrap();
         assert!(!updated.active);
     }
 
@@ -383,8 +401,8 @@ mod tests {
             .await
             .unwrap();
 
-        repo.record_heartbeat(&worker.id).await.unwrap();
-        let heartbeat = repo.get_latest_heartbeat(&worker.id).await.unwrap();
+        repo._record_heartbeat(&worker.id).await.unwrap();
+        let heartbeat = repo._get_latest_heartbeat(&worker.id).await.unwrap();
 
         // Heartbeat should be recent
         let now = SystemTime::now();
@@ -395,7 +413,7 @@ mod tests {
     #[sqlx::test(migrator = "db_common::MIGRATOR")]
     async fn get_nonexistent_worker(pool: PgPool) {
         let repo = PgWorkerRepository::new(PgRepositoryCore::new(pool));
-        let result = repo.get_worker_by_id(&Uuid::new_v4()).await;
+        let result = repo._get_worker_by_id(&Uuid::new_v4()).await;
         assert!(result.is_err());
     }
 
@@ -403,7 +421,7 @@ mod tests {
     #[sqlx::test(migrator = "db_common::MIGRATOR")]
     async fn get_nonexistent_heartbeat(pool: PgPool) {
         let repo = PgWorkerRepository::new(PgRepositoryCore::new(pool));
-        let result = repo.get_latest_heartbeat(&Uuid::new_v4()).await;
+        let result = repo._get_latest_heartbeat(&Uuid::new_v4()).await;
         assert!(result.is_err());
     }
 }

@@ -1,7 +1,7 @@
 use axum::{
     extract::{Json, Path, State},
     http::StatusCode,
-    routing::{delete, post, put},
+    routing::{delete, post},
     Router,
 };
 use serde::Deserialize;
@@ -73,7 +73,7 @@ async fn register_worker(
     // Register worker in repository
     let worker = state
         .worker_repository
-        .register_worker(id.clone(), input.name, task_kinds)
+        .register_worker(id, input.name, task_kinds)
         .await
         .map_err(|e| {
             error!("Failed to register worker: {:?}", e);

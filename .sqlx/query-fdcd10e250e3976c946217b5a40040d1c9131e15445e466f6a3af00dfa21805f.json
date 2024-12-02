@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                SELECT tt.id, tt.name \n                FROM task_types tt\n                JOIN worker_task_types wtt ON wtt.task_type_id = tt.id\n                WHERE wtt.worker_id = $1\n                ",
+  "query": "\n                SELECT tt.id, tt.name \n                FROM task_kinds tt\n                JOIN worker_task_kinds wtt ON wtt.task_kind_id = tt.id\n                WHERE wtt.worker_id = $1\n                ",
   "describe": {
     "columns": [
       {
@@ -24,5 +24,5 @@
       false
     ]
   },
-  "hash": "90ac9d8f7df5d8b7a2d6a363b9d152abe44018a064886d190eb9fce7e9ee3003"
+  "hash": "fdcd10e250e3976c946217b5a40040d1c9131e15445e466f6a3af00dfa21805f"
 }
