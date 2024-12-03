@@ -1,26 +1,48 @@
-FROM rust:1.82.0 AS builder
-
+# Base image for chef
+FROM rust:1.82.0 AS chef
 WORKDIR /server
+RUN cargo install cargo-chef
 
-COPY server/libs libs
+# Planner stage
+FROM chef AS planner
+WORKDIR /app
 
-WORKDIR /server/services/galactus
+# Copy workspace files first
+COPY Cargo.toml Cargo.lock ./
+COPY server/libs ./server/libs
+COPY server/services/galactus ./server/services/galactus
 
-COPY server/services/galactus/Cargo.toml .
-COPY server/services/galactus/.sqlx .sqlx
-# Create empty src/main.rs to cache dependencies
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo build --release
+# Create recipe
+RUN cargo chef prepare --recipe-path recipe.json
 
-COPY server/services/galactus/src src
-RUN touch src/main.rs
-RUN cargo build --release
+# Builder stage
+FROM chef AS builder
+WORKDIR /app
 
+# First get the recipe
+COPY --from=planner /app/recipe.json recipe.json
+
+# Cook dependencies
+RUN cargo chef cook --release --recipe-path recipe.json
+
+# Copy the whole workspace structure
+COPY Cargo.toml Cargo.lock ./
+COPY server/libs ./server/libs
+COPY server/services/galactus ./server/services/galactus
+
+# Build the specific service
+ENV SQLX_OFFLINE=true
+RUN cargo build --release --bin galactus
+
+# Strip the binary
 RUN strip target/release/galactus
 
-FROM gcr.io/distroless/cc-debian12:latest as release
+# Final stage
+FROM gcr.io/distroless/cc-debian12:nonroot AS release
 WORKDIR /app
-COPY --from=builder /server/services/galactus/target/release/galactus .
+
+# Copy the binary from the correct location
+COPY --from=builder /app/target/release/galactus .
 
 EXPOSE 3000
 

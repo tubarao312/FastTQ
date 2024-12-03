@@ -1,2 +1,6 @@
-.sqlx
 .env*
+target/
+Dockerfile
+.git/
+.gitignore
+README.md

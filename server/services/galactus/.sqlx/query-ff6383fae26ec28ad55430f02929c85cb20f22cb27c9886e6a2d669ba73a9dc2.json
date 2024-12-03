@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, name FROM task_types WHERE id = $1\n            ",
+  "query": "\n            SELECT id, name FROM task_kinds WHERE id = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -24,5 +24,5 @@
       false
     ]
   },
-  "hash": "bbe57622596e2d1dda9497592be7be0216a70c9464fe75818d502a2728c08bee"
+  "hash": "ff6383fae26ec28ad55430f02929c85cb20f22cb27c9886e6a2d669ba73a9dc2"
 }

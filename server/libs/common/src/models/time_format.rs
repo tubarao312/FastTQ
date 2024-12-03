@@ -9,7 +9,7 @@ where
     let s = dt
         .format(&time::format_description::well_known::Iso8601::DEFAULT)
         .map_err(serde::ser::Error::custom)?;
-    serializer.serialize_str(&s.trim_start_matches("+00"))
+    serializer.serialize_str(s.trim_start_matches("+00"))
 }
 
 pub fn deserialize_datetime<'de, D>(deserializer: D) -> Result<OffsetDateTime, D::Error>

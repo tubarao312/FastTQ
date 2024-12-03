@@ -12,13 +12,13 @@ use std::sync::Arc;
 use crate::{TaskInstance, Worker};
 
 async fn create_broker_connection(
-    uri: &String,
+    uri: &str,
 ) -> Result<Arc<dyn BrokerCore + Send + Sync>, Box<dyn std::error::Error>> {
     let prefix = uri.split(":").collect::<Vec<&str>>()[0];
 
     match prefix {
-        "redis" => Ok(Arc::new(RedisBroker::new(&uri).await?)),
-        "amqp" => Ok(Arc::new(RabbitBroker::new(&uri).await?)),
+        "redis" => Ok(Arc::new(RedisBroker::new(uri).await?)),
+        "amqp" => Ok(Arc::new(RabbitBroker::new(uri).await?)),
         _ => Err("Invalid broker URI".into()),
     }
 }
@@ -32,10 +32,10 @@ pub struct Broker {
 }
 
 impl Broker {
-    pub async fn new(uri: &String) -> Result<Self, Box<dyn std::error::Error>> {
+    pub async fn new(uri: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let broker = create_broker_connection(uri).await?;
         Ok(Broker {
-            uri: uri.clone(),
+            uri: uri.to_string(),
             broker,
             workers: Vec::new(),
             workers_index: 0,
@@ -71,7 +71,7 @@ impl Broker {
             })
             // Find the first worker that can handle the task
             .find(|cur_worker| cur_worker.can_handle(task))
-            .ok_or_else(|| "No available worker")?;
+            .ok_or("No available worker")?;
 
         // Convert input data to bytes
         let payload = serde_json::to_vec(&task.input_data)?;

@@ -3,16 +3,13 @@ mod config;
 mod repo;
 mod testing;
 
-use std::sync::Arc;
+use std::{net::SocketAddr, sync::Arc};
 
-use axum::{serve, Router};
+use axum::Router;
+use common::brokers::Broker;
 use sqlx::PgPool;
-use tokio::net::TcpListener;
 use tokio::sync::RwLock;
 use tracing::info;
-use tracing_subscriber;
-
-use common::brokers::Broker;
 
 use config::Config;
 use repo::{PgRepositoryCore, PgTaskInstanceRepository, PgTaskKindRepository, PgWorkerRepository};
@@ -98,36 +95,24 @@ async fn setup_app(db_pools: PgPool, broker: Broker) -> Router {
 async fn main() {
     let config = Config::new();
 
-    // Setup the logger
     setup_logger().await;
 
-    info!("Logger initialized");
+    info!("Starting Galactus");
 
-    // Setup the database pools
     let db_pools = setup_db_pools(&config).await;
+    info!("Database connection pools created");
 
-    info!("Database pools created");
-
-    // Setup the broker
     let broker = setup_broker(&config).await;
+    info!("Broker initialized");
 
-    info!("Broker created");
-
-    // Setup the router
     let app = setup_app(db_pools, broker).await;
+    info!("App created");
 
-    info!("App router created");
+    let addr = SocketAddr::from(([0, 0, 0, 0], 3000));
+    info!("Listening on {}", addr);
 
-    // Setup the listener and bind to the port
-    let listener = TcpListener::bind("0.0.0.0:3000")
+    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    axum::serve(listener, app.into_make_service())
         .await
-        .expect("Failed to bind to port");
-
-    info!("Listener created");
-    info!("Serving app...");
-
-    // Serve the app
-    serve(listener, app.into_make_service())
-        .await
-        .expect("Failed to serve app");
+        .unwrap();
 }

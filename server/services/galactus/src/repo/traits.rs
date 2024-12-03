@@ -71,7 +71,7 @@ pub trait TaskKindRepository: Clone {
     async fn get_or_create_task_kind(&self, name: String) -> Result<TaskKind, sqlx::Error>;
 
     /// Get all registered task kinds
-    async fn get_all_task_kinds(&self) -> Result<Vec<TaskKind>, sqlx::Error>;
+    async fn _get_all_task_kinds(&self) -> Result<Vec<TaskKind>, sqlx::Error>;
 }
 
 /// Repository trait for managing worker records in the database
@@ -88,17 +88,17 @@ pub trait WorkerRepository: Clone {
     ) -> Result<Worker, sqlx::Error>;
 
     /// Get a worker by ID
-    async fn get_worker_by_id(&self, id: &Uuid) -> Result<Worker, sqlx::Error>;
+    async fn _get_worker_by_id(&self, id: &Uuid) -> Result<Worker, sqlx::Error>;
 
     /// Get all registered workers
-    async fn get_all_workers(&self) -> Result<Vec<Worker>, sqlx::Error>;
+    async fn _get_all_workers(&self) -> Result<Vec<Worker>, sqlx::Error>;
 
     /// Update a worker's active status
     async fn set_worker_active(&self, worker_id: &Uuid, active: bool) -> Result<(), sqlx::Error>;
 
     /// Record a heartbeat for a worker
-    async fn record_heartbeat(&self, worker_id: &Uuid) -> Result<(), sqlx::Error>;
+    async fn _record_heartbeat(&self, worker_id: &Uuid) -> Result<(), sqlx::Error>;
 
     /// Get the latest heartbeat for a worker
-    async fn get_latest_heartbeat(&self, worker_id: &Uuid) -> Result<SystemTime, sqlx::Error>;
+    async fn _get_latest_heartbeat(&self, worker_id: &Uuid) -> Result<SystemTime, sqlx::Error>;
 }

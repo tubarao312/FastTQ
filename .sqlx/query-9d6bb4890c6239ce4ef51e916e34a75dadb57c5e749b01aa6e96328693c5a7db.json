@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            INSERT INTO tasks (id, task_type_id, input_data, status, assigned_to)\n            VALUES ($1, $2, $3, $4, $5)\n            RETURNING id, task_type_id, input_data, status, assigned_to, created_at\n            ",
+  "query": "\n            SELECT id, task_kind_id, input_data, status::text, assigned_to, created_at \n            FROM tasks \n            WHERE id = $1\n            ",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "task_type_id",
+        "name": "task_kind_id",
         "type_info": "Uuid"
       },
       {
@@ -36,10 +36,6 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Uuid",
-        "Jsonb",
-        "Text",
         "Uuid"
       ]
     },
@@ -52,5 +48,5 @@
       false
     ]
   },
-  "hash": "4e761fbda2b3ecd9e8cb29c490e33a11573d5e2a1786b6893fc68c5fb194bbe1"
+  "hash": "9d6bb4890c6239ce4ef51e916e34a75dadb57c5e749b01aa6e96328693c5a7db"
 }
