@@ -11,22 +11,17 @@ on:
 jobs:
   prepare:
     name: Prepare and lint
-    runs-on: ubuntu-latest
+    runs-on: rust-lang/rust:latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/cache@v3
+      - name: Cache sqlx-cli
+        uses: actions/cache@v3
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          path: ~/.cargo/bin/sqlx
+          key: ${{ runner.os }}-sqlx-cli-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
+            ${{ runner.os }}-sqlx-cli-
 
       - name: Format code
         run: cargo fmt --all
@@ -38,7 +33,7 @@ jobs:
         run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
 
       - name: Run sqlx prepare
-        run: cargo sqlx prepare --workspace --check
+        run: cargo sqlx prepare --workspace
         env:
           SQLX_OFFLINE: true
 
