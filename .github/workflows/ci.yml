@@ -37,7 +37,7 @@ jobs:
         run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
 
       - name: Run sqlx prepare
-        run: cargo sqlx prepare --workspace
+        run: cargo sqlx prepare --workspace --check
         env:
           SQLX_OFFLINE: true
 
