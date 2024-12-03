@@ -11,7 +11,9 @@ on:
 jobs:
   prepare:
     name: Prepare and lint
-    runs-on: rust-lang/rust:latest
+    runs-on: ubuntu-latest
+    container:
+      image: rust-lang/rust:latest
     steps:
       - uses: actions/checkout@v4
 
