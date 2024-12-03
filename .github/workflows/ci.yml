@@ -15,15 +15,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache sqlx-cli
-        id: sqlx-cache
-        uses: actions/cache@v3
-        with:
-          path: ~/.cargo/bin/sqlx
-          key: ${{ runner.os }}-sqlx-cli-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-sqlx-cli-
-
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -35,7 +26,6 @@ jobs:
         run: cargo clippy --all-features --tests -- -D warnings
 
       - name: Install sqlx-cli
-        if: steps.sqlx-cache.outputs.cache-hit != 'true'
         run: cargo install sqlx-cli --no-default-features --features native-tls,postgres
 
       - name: Run sqlx prepare
