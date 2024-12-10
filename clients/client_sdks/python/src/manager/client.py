@@ -1,11 +1,12 @@
+from enum import Enum
 from typing import Optional
 from dataclasses import dataclass
 
 from uuid import UUID
 import aiohttp as aio
 
-from clients.client_sdks.python.src.manager.config import ManagerConfig
-from clients.client_sdks.python.src.models.task import (
+from src.manager.config import ManagerConfig
+from src.models.task import (
     TaskStatus,
     TaskInput,
     TaskOutput,
@@ -19,11 +20,50 @@ TASK_PATH = "/tasks"
 """ Base path for task CRUD operations."""
 
 
+class ManagerStates(str, Enum):
+    """Possible states of the manager.
+
+    ### States
+    - `HEALTHY`: The manager is healthy.
+    - `UNHEALTHY`: The manager is unhealthy.
+    - `NOT_REACHABLE`: The manager is not reachable.
+    - `UNKNOWN`: The manager is in an unknown state.
+    """
+
+    HEALTHY = "healthy"
+    UNHEALTHY = "unhealthy"
+    NOT_REACHABLE = "not_reachable"
+    UNKNOWN = "unknown"
+
+
 @dataclass
 class ManagerClient:
     """Abstracts the manager API for worker registration and unregistration."""
 
     config: ManagerConfig
+
+    # Check whether the manager is healthy
+
+    async def check_health(self) -> ManagerStates:
+        """Check whether the manager is healthy. This is currently used before
+        tests are run to notify the user if the manager is not healthy or even
+        running at all.
+
+        ### Returns
+        - `ManagerStates`: Whether the manager is healthy.
+        """
+        try:
+            async with aio.ClientSession(timeout=self.config.timeout) as session:
+                async with session.get(f"{self.config.url}/health") as resp:
+                    match resp.status:
+                        case 200:
+                            return ManagerStates.HEALTHY
+                        case 503:
+                            return ManagerStates.UNHEALTHY
+                        case _:
+                            return ManagerStates.UNHEALTHY
+        except aio.ClientConnectorError:
+            return ManagerStates.NOT_REACHABLE
 
     # Task Get/Set Operations
 
@@ -112,7 +152,8 @@ class ManagerClient:
                 json={"name": name, "task_kinds": task_kinds},
             ) as resp:
                 resp.raise_for_status()
-                return await resp.json()
+                data = await resp.json()
+                return UUID(data["id"])
 
     async def unregister_worker(self, worker_id: UUID) -> None:
         """Unregister an existing worker. Called on graceful worker shutdown.
