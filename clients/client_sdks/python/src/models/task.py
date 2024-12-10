@@ -123,9 +123,9 @@ class TaskInstance:
 
         return TaskInstance(
             id=UUID(data["id"]),
-            task_kind=data["kind"],
+            task_kind=data["task_kind"],
             input_data=data["input_data"],
-            status=TaskStatus(data["status"]),
+            status=TaskStatus(data["status"].lower()),
             created_at=datetime.fromisoformat(data["created_at"]),
             assigned_to=UUID(data["assigned_to"]) if data["assigned_to"] else None,
             result=TaskResult.from_dict(data["result"]),
