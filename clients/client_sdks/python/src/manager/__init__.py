@@ -1,4 +1,4 @@
-from clients.client_sdks.python.src.manager.client import ManagerClient
-from clients.client_sdks.python.src.manager.config import ManagerConfig
+from src.manager.client import ManagerClient, ManagerStates
+from src.manager.config import ManagerConfig
 
-__all__ = ["ManagerClient", "ManagerConfig"]
+__all__ = ["ManagerClient", "ManagerConfig", "ManagerStates"]

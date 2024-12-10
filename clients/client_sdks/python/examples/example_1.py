@@ -1,10 +1,10 @@
 import asyncio
 from typing import Any
-from clients.client_sdks.python.src.models.task import TaskInstance
-from clients.client_sdks.python.src.publisher import PublisherClient
+from src.models.task import TaskInstance
+from src.publisher.client import PublisherClient
 from src.worker import WorkerApplication, WorkerApplicationConfig
 from src.broker import BrokerConfig
-from clients.client_sdks.python.src.manager.config import ManagerConfig
+from src.manager.config import ManagerConfig
 
 # GENERAL CONFIGURATION _______________________________________________________
 # These configs should be shared across both the publisher and the worker.
