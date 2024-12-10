@@ -1,12 +1,4 @@
-from dataclasses import dataclass
+from clients.client_sdks.python.src.manager.client import ManagerClient
+from clients.client_sdks.python.src.manager.config import ManagerConfig
 
-
-@dataclass
-class ManagerConfig:
-    """Configuration for the manager.
-
-    ### Attributes
-    - `url`: The URL of the manager.
-    """
-
-    url: str
+__all__ = ["ManagerClient", "ManagerConfig"]
