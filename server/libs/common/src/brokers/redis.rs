@@ -20,7 +20,12 @@ impl RedisBroker {
 
 #[async_trait]
 impl BrokerCore for RedisBroker {
-    async fn register_queue(&self, _: &str) -> Result<(), Box<dyn std::error::Error>> {
+    async fn register_queue(
+        &self,
+        _: &str,
+        _: &str,
+        _: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         // Redis does not have the concept of queues, so we don't need to do anything here
         Ok(())
     }

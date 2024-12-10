@@ -13,7 +13,7 @@ use crate::{TaskInstance, Worker};
 
 async fn create_broker_connection(
     uri: &str,
-) -> Result<Arc<dyn BrokerCore + Send + Sync>, Box<dyn std::error::Error>> {
+) -> Result<Arc<dyn BrokerCore>, Box<dyn std::error::Error>> {
     let prefix = uri.split(":").collect::<Vec<&str>>()[0];
 
     match prefix {
@@ -26,7 +26,7 @@ async fn create_broker_connection(
 #[derive(Clone)]
 pub struct Broker {
     pub uri: String,
-    pub broker: Arc<dyn BrokerCore + Send + Sync>,
+    pub broker: Arc<dyn BrokerCore>,
     pub workers: Vec<Worker>,
     pub workers_index: usize,
 }
@@ -42,7 +42,16 @@ impl Broker {
         })
     }
 
-    pub fn register_worker(&mut self, worker: Worker) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn register_worker(
+        &mut self,
+        worker: Worker,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        for task_kind in worker.task_kind.clone() {
+            self.broker
+                .register_queue(&task_kind.name, &task_kind.name, &worker.name)
+                .await?;
+        }
+
         self.workers.push(worker);
         Ok(())
     }
@@ -99,9 +108,15 @@ mod tests {
     struct MockBroker;
     #[async_trait]
     impl BrokerCore for MockBroker {
-        async fn register_queue(&self, _: &str) -> Result<(), Box<dyn std::error::Error>> {
+        async fn register_queue(
+            &self,
+            _: &str,
+            _: &str,
+            _: &str,
+        ) -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
+
         async fn publish_message(
             &self,
             _task_name: &str,
@@ -202,7 +217,7 @@ mod tests {
         let workers = setup_workers(setup_task_kinds());
 
         for worker in workers {
-            broker.register_worker(worker).unwrap();
+            broker.register_worker(worker).await.unwrap();
         }
 
         assert_eq!(broker.workers.len(), 3);
@@ -215,7 +230,7 @@ mod tests {
         let workers = setup_workers(setup_task_kinds());
 
         for worker in workers.clone() {
-            broker.register_worker(worker).unwrap();
+            broker.register_worker(worker).await.unwrap();
         }
 
         broker.remove_worker(&workers[0].id).unwrap();
@@ -233,7 +248,7 @@ mod tests {
         broker.broker = Arc::new(MockBroker {});
 
         for worker in workers.clone() {
-            broker.register_worker(worker).unwrap();
+            broker.register_worker(worker).await.unwrap();
         }
 
         for task in tasks {
@@ -250,7 +265,7 @@ mod tests {
         let workers = setup_workers(setup_task_kinds());
 
         for worker in workers.clone() {
-            broker.register_worker(worker).unwrap();
+            broker.register_worker(worker).await.unwrap();
         }
 
         let task = TaskInstance {

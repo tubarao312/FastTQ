@@ -10,7 +10,7 @@ from src.manager.config import ManagerConfig
 # These configs should be shared across both the publisher and the worker.
 
 # Both the publisher and the worker need to know about the manager.
-manager_config = ManagerConfig(url="http://localhost:8000")
+manager_config = ManagerConfig(url="http://localhost:3000")
 
 # Both the publisher and the worker need to know about the task kinds and
 # should have unified names for them.

@@ -3,8 +3,8 @@ from uuid import UUID
 
 from dataclasses import dataclass
 
-from clients.client_sdks.python.src.manager import ManagerClient, ManagerConfig
-from clients.client_sdks.python.src.models.task import TaskInput, TaskInstance
+from manager import ManagerClient, ManagerConfig
+from models.task import TaskInput, TaskInstance
 
 
 @dataclass

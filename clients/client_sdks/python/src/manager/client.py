@@ -5,8 +5,8 @@ from dataclasses import dataclass
 from uuid import UUID
 import aiohttp as aio
 
-from src.manager.config import ManagerConfig
-from src.models.task import (
+from manager.config import ManagerConfig
+from models.task import (
     TaskStatus,
     TaskInput,
     TaskOutput,

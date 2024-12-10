@@ -1,6 +1,8 @@
 use crate::brokers::core::BrokerCore;
 use async_trait::async_trait;
-use lapin::{options::*, types::FieldTable, BasicProperties, Connection, ConnectionProperties};
+use lapin::{
+    options::*, types::FieldTable, BasicProperties, Connection, ConnectionProperties, ExchangeKind,
+};
 use std::sync::Arc;
 
 #[derive(Clone)]
@@ -20,12 +22,36 @@ impl RabbitBroker {
 
 #[async_trait]
 impl BrokerCore for RabbitBroker {
-    async fn register_queue(&self, queue_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    async fn register_queue(
+        &self,
+        queue_name: &str,
+        exchange: &str,
+        routing_key: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let channel = self.connection.create_channel().await?;
         channel
             .queue_declare(
                 queue_name,
                 QueueDeclareOptions::default(),
+                FieldTable::default(),
+            )
+            .await?;
+
+        channel
+            .exchange_declare(
+                exchange,
+                ExchangeKind::Direct,
+                ExchangeDeclareOptions::default(),
+                FieldTable::default(),
+            )
+            .await?;
+
+        channel
+            .queue_bind(
+                queue_name,
+                exchange,
+                routing_key,
+                QueueBindOptions::default(),
                 FieldTable::default(),
             )
             .await?;
@@ -40,6 +66,7 @@ impl BrokerCore for RabbitBroker {
         payload: &[u8],
     ) -> Result<(), Box<dyn std::error::Error>> {
         let channel = self.connection.create_channel().await?;
+
         channel
             .basic_publish(
                 exchange,
@@ -48,7 +75,6 @@ impl BrokerCore for RabbitBroker {
                 payload,
                 BasicProperties::default(),
             )
-            .await?
             .await?;
 
         Ok(())
