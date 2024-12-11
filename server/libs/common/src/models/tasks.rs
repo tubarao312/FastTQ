@@ -114,5 +114,9 @@ pub struct TaskResult {
     pub output_data: Option<serde_json::Value>,
     pub error_data: Option<serde_json::Value>,
     pub worker_id: Uuid,
+    #[serde(
+        serialize_with = "crate::models::serialize_datetime",
+        deserialize_with = "crate::models::deserialize_datetime"
+    )]
     pub created_at: OffsetDateTime,
 }
