@@ -46,31 +46,28 @@ class TaskResult:
     """Task results contain the output or error data from a completed task.
 
     ### Parameters
-    - `task_id`: The ID of the task.
     - `data`: The data of the task.
     - `is_error`: Whether the task failed.
-    - `worker_id`: The ID of the worker that completed the task.
     - `created_at`: The time the task was created.
 
     ### Methods
     - `from_dict`: Creates a TaskResult from a dictionary.
     """
 
-    task_id: UUID
     data: Optional[TaskOutput]
     is_error: bool
-    worker_id: UUID
     created_at: datetime
 
     @staticmethod
     def from_dict(data: dict[str, Any]) -> "TaskResult":
         """Creates a TaskResult from a dictionary."""
 
+        is_error: bool = data["output_data"] is None
+        output_data = data["output_data"] if not is_error else data["error_data"]
+
         return TaskResult(
-            task_id=UUID(data["task_id"]),
-            data=data["data"],
-            is_error=data["is_error"],
-            worker_id=UUID(data["worker_id"]),
+            data=output_data,
+            is_error=is_error,
             created_at=datetime.fromisoformat(data["created_at"]),
         )
 
@@ -123,10 +120,10 @@ class TaskInstance:
 
         return TaskInstance(
             id=UUID(data["id"]),
-            task_kind=data["task_kind"],
+            task_kind=data["task_kind"]["name"],
             input_data=data["input_data"],
             status=TaskStatus(data["status"].lower()),
             created_at=datetime.fromisoformat(data["created_at"]),
             assigned_to=UUID(data["assigned_to"]) if data["assigned_to"] else None,
-            result=TaskResult.from_dict(data["result"]),
+            result=TaskResult.from_dict(data["result"]) if data["result"] else None,
         )
