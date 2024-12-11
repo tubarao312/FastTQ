@@ -1,12 +1,4 @@
-from dataclasses import dataclass
+from manager.client import ManagerClient, ManagerStates
+from manager.config import ManagerConfig
 
-
-@dataclass
-class ManagerConfig:
-    """Configuration for the manager.
-
-    ### Attributes
-    - `url`: The URL of the manager.
-    """
-
-    url: str
+__all__ = ["ManagerClient", "ManagerConfig", "ManagerStates"]

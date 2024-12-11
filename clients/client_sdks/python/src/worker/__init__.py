@@ -5,7 +5,7 @@ import asyncio
 from dataclasses import dataclass
 
 from src.broker import BrokerConfig
-from src.manager import ManagerConfig
+from src.manager.config import ManagerConfig
 from src.models.task import TaskInput, TaskOutput
 
 

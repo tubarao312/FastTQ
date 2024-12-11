@@ -1,16 +1,16 @@
 import asyncio
 from typing import Any
-from clients.client_sdks.python.src.models.task import TaskStatus, TaskStatusUpdate
-from clients.client_sdks.python.src.publisher import PublisherClient
+from src.models.task import TaskInstance
+from src.publisher.client import PublisherClient
 from src.worker import WorkerApplication, WorkerApplicationConfig
 from src.broker import BrokerConfig
-from src.manager import ManagerConfig
+from src.manager.config import ManagerConfig
 
 # GENERAL CONFIGURATION _______________________________________________________
 # These configs should be shared across both the publisher and the worker.
 
 # Both the publisher and the worker need to know about the manager.
-manager_config = ManagerConfig(url="http://localhost:8000")
+manager_config = ManagerConfig(url="http://localhost:3000")
 
 # Both the publisher and the worker need to know about the task kinds and
 # should have unified names for them.
@@ -53,21 +53,16 @@ async def task_2(input_data: dict[Any, Any]) -> dict[Any, Any]:
 publisher_client = PublisherClient(manager_config)
 
 
-async def get_task_result() -> TaskStatusUpdate:
+async def get_completed_task() -> TaskInstance:
     # Publish a task
-    task_id = await publisher_client.publish_task(TASK_1_NAME, {"foo": "bar"})
+    task_instance = await publisher_client.publish_task(TASK_1_NAME, {"foo": "bar"})
 
-    # Get the status of a task when it's ready
-    while True:
-        status_update = await publisher_client.get_task_status_update(task_id)
-        if status_update.status in (TaskStatus.SUCCESS, TaskStatus.FAILURE):
-            return status_update
-        await asyncio.sleep(1)
+    # Get the task result
+    task_instance = await publisher_client.get_task(task_instance.id, long_poll=True)
 
+    return task_instance
 
-# IDEA - We could also have a publisher_client.await_task_completition() method that simply
-# executes the function as if it was a normal function call.
 
 if __name__ == "__main__":
-    result = asyncio.run(get_task_result())
+    result = asyncio.run(get_completed_task())
     print(result)

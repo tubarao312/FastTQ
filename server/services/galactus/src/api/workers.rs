@@ -89,6 +89,7 @@ async fn register_worker(
         .write()
         .await
         .register_worker(worker.clone())
+        .await
         .map_err(|e| {
             error!("Failed to register worker in broker: {:?}", e);
             (
@@ -208,7 +209,7 @@ mod test {
     async fn test_unregister_worker_success(db_pools: PgPool) {
         let mut broker = get_mock_broker();
         let test_worker = get_test_worker(&["test_task"]);
-        broker.register_worker(test_worker.clone()).unwrap();
+        broker.register_worker(test_worker.clone()).await.unwrap();
 
         let core = PgRepositoryCore::new(db_pools.clone());
         let worker_repo = PgWorkerRepository::new(core);

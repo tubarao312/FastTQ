@@ -1,0 +1,4 @@
+aiohttp>=3.11.8
+pytest>=8.3.4
+pytest-asyncio>=0.24.0
+uuid>=1.30

@@ -38,9 +38,15 @@ pub mod test {
 
     #[async_trait]
     impl BrokerCore for MockBrokerCore {
-        async fn register_queue(&self, _: &str) -> Result<(), Box<dyn std::error::Error>> {
+        async fn register_queue(
+            &self,
+            _: &str,
+            _: &str,
+            _: &str,
+        ) -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
+
         async fn publish_message(
             &self,
             _task_name: &str,

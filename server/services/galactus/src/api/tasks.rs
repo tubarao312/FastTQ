@@ -53,25 +53,22 @@ async fn get_task_by_id(
 
     let task = state.task_repository.get_task_by_id(&id, true).await;
 
-    match task {
-        Ok(task) => Ok(Json(task)),
-        Err(e) => match e {
-            sqlx::Error::RowNotFound => {
-                info!("Task with ID {:?} not found", id);
-                Err((
-                    StatusCode::NOT_FOUND,
-                    format!("Task with ID {} not found", id),
-                ))
-            }
-            _ => {
-                error!("Error getting task by id: {:?}", e);
-                Err((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    format!("Failed to get task: {}", e),
-                ))
-            }
-        },
-    }
+    task.map(Json).map_err(|e| match e {
+        sqlx::Error::RowNotFound => {
+            info!("Task with ID {:?} not found", id);
+            (
+                StatusCode::NOT_FOUND,
+                format!("Task with ID {} not found", id),
+            )
+        }
+        _ => {
+            error!("Error getting task by id: {:?}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to get task: {}", e),
+            )
+        }
+    })
 }
 
 /// Input data for creating a task
@@ -207,7 +204,7 @@ async fn update_task_status(
         .get_task_by_id(&id, true)
         .await
         .map_err(|e| {
-            error!("Task not found: {:?}", e);
+            error!("Task with id {:?} not found: {:?}", id, e);
             (
                 StatusCode::NOT_FOUND,
                 format!("Task with id {} not found", id),
@@ -371,7 +368,7 @@ mod test {
 
         info!("Task Created: {:?}", task);
 
-        let response = server.get(&format!("/tasks/{}", task.id)).await;
+        let response: axum_test::TestResponse = server.get(&format!("/tasks/{}", task.id)).await;
         assert_eq!(response.status_code(), StatusCode::OK);
     }
 
@@ -401,6 +398,7 @@ mod test {
         let mut broker = get_mock_broker();
         broker
             .register_worker(get_test_worker(&["different_task"]))
+            .await
             .unwrap();
         let core = PgRepositoryCore::new(db_pools.clone());
         let worker_repo = PgWorkerRepository::new(core);
@@ -428,7 +426,7 @@ mod test {
     async fn create_task_succesfully(db_pools: PgPool) {
         let mut broker = get_mock_broker();
         let test_worker = get_test_worker(&["test_task"]);
-        broker.register_worker(test_worker.clone()).unwrap();
+        broker.register_worker(test_worker.clone()).await.unwrap();
         let core = PgRepositoryCore::new(db_pools.clone());
         let worker_repo = PgWorkerRepository::new(core);
         worker_repo
@@ -471,7 +469,7 @@ mod test {
     async fn update_task_status_fails_with_invalid_status(db_pools: PgPool) {
         let mut broker = get_mock_broker();
         let test_worker = get_test_worker(&["test_task"]);
-        broker.register_worker(test_worker.clone()).unwrap();
+        broker.register_worker(test_worker.clone()).await.unwrap();
         let core = PgRepositoryCore::new(db_pools.clone());
         let worker_repo = PgWorkerRepository::new(core);
         worker_repo
@@ -501,7 +499,7 @@ mod test {
     async fn update_task_status_successfully(db_pools: PgPool) {
         let mut broker = get_mock_broker();
         let test_worker = get_test_worker(&["test_task"]);
-        broker.register_worker(test_worker.clone()).unwrap();
+        broker.register_worker(test_worker.clone()).await.unwrap();
         let core = PgRepositoryCore::new(db_pools.clone());
         let worker_repo = PgWorkerRepository::new(core);
         worker_repo
@@ -548,7 +546,7 @@ mod test {
     async fn update_task_result_successfully(db_pools: PgPool) {
         let mut broker = get_mock_broker();
         let test_worker = get_test_worker(&["test_task"]);
-        broker.register_worker(test_worker.clone()).unwrap();
+        broker.register_worker(test_worker.clone()).await.unwrap();
         let core = PgRepositoryCore::new(db_pools.clone());
         let worker_repo = PgWorkerRepository::new(core);
         worker_repo
@@ -581,7 +579,7 @@ mod test {
     async fn update_task_error_successfully(db_pools: PgPool) {
         let mut broker = get_mock_broker();
         let test_worker = get_test_worker(&["test_task"]);
-        broker.register_worker(test_worker.clone()).unwrap();
+        broker.register_worker(test_worker.clone()).await.unwrap();
         let core = PgRepositoryCore::new(db_pools.clone());
         let worker_repo = PgWorkerRepository::new(core);
         worker_repo
