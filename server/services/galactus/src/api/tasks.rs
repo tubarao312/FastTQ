@@ -204,7 +204,7 @@ async fn update_task_status(
         .get_task_by_id(&id, true)
         .await
         .map_err(|e| {
-            error!("Task not found: {:?}", e);
+            error!("Task with id {:?} not found: {:?}", id, e);
             (
                 StatusCode::NOT_FOUND,
                 format!("Task with id {} not found", id),
@@ -368,7 +368,7 @@ mod test {
 
         info!("Task Created: {:?}", task);
 
-        let response = server.get(&format!("/tasks/{}", task.id)).await;
+        let response: axum_test::TestResponse = server.get(&format!("/tasks/{}", task.id)).await;
         assert_eq!(response.status_code(), StatusCode::OK);
     }
 
