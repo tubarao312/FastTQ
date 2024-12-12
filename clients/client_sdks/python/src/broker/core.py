@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Callable, List
 
 
 @dataclass
@@ -23,8 +22,6 @@ class BrokerClient(ABC):
         pass
 
     @abstractmethod
-    async def subscribe(
-        self, channels: List[str], handler: Callable[[str, str], None]
-    ) -> None:
-        """Subscribe to multiple channels or queues and handle incoming messages."""
+    async def listen(self, queue: str) -> None:
+        """Listen to a specific queue."""
         pass

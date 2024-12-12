@@ -19,6 +19,11 @@ class WorkerClient:
 
     ### Methods
     - `register_worker`: Register a worker with the manager.
+    - `unregister_worker`: Unregister a worker with the manager.
+    - `task`: A decorator to register a task with the worker.
+    - `listen`: Listen for tasks from the broker and updates its status on the worker.
+    - `execute_task`: Execute a task. For every state of the task the status will be updated on the manager asynchronously.
+    - `run`: Listen for tasks from the broker and updates its status on the worker. This is the main method to run the worker.
     """
 
     id: UUID
@@ -73,12 +78,12 @@ class WorkerClient:
 
         return decorator
 
-    async def listen(self, task_name: str):
+    async def _listen(self, task_name: str):
         """Listen for tasks from the broker and updates its status on the worker."""
         async for input_data in self._broker_client.subscribe(task_name):
             await self.execute_task(task_name, input_data)
 
-    async def execute_task(self, task_name: str, input_data: dict) -> dict:
+    async def _execute_task(self, task_name: str, input_data: dict) -> dict:
         """Execute a task. For every state of the task the status will be updated on the manager asynchronously.
 
         ### Arguments
@@ -103,6 +108,8 @@ class WorkerClient:
 
     async def run(self):
         """Listen for tasks from the broker and updates its status on the worker."""
+        await self.register_worker()
+
         try:
             asyncio.gather(
                 *[self.listen(task_name) for task_name in self.task_registry.keys()]
@@ -111,4 +118,4 @@ class WorkerClient:
             # Log here if some error occurred
             pass
         finally:
-            await self._broker_client.disconnect()
+            await self.unregister_worker()
