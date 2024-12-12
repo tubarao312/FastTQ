@@ -5,7 +5,9 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "aio-pika>=9.5.3",
     "aiohttp>=3.11.8",
+    "aioredis>=2.0.1",
     "pytest>=8.3.4",
     "pytest-asyncio>=0.24.0",
     "uuid>=1.30",

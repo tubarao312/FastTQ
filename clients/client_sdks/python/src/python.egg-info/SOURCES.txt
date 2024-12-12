@@ -2,6 +2,9 @@ README.md
 pyproject.toml
 src/__init__.py
 src/broker/__init__.py
+src/broker/core.py
+src/broker/rabbitmq.py
+src/broker/redis.py
 src/manager/__init__.py
 src/manager/client.py
 src/manager/config.py
@@ -13,3 +16,4 @@ src/python.egg-info/dependency_links.txt
 src/python.egg-info/requires.txt
 src/python.egg-info/top_level.txt
 src/worker/__init__.py
+src/worker/client.py

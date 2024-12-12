@@ -4,7 +4,9 @@ Version: 0.1.0
 Summary: Add your description here
 Requires-Python: >=3.12
 Description-Content-Type: text/markdown
+Requires-Dist: aio-pika>=9.5.3
 Requires-Dist: aiohttp>=3.11.8
+Requires-Dist: aioredis>=2.0.1
 Requires-Dist: pytest>=8.3.4
 Requires-Dist: pytest-asyncio>=0.24.0
 Requires-Dist: uuid>=1.30
