@@ -8,7 +8,7 @@ class BrokerConfig:
     """Configuration for a broker."""
 
     url: str
-    exchanges: List[str] = None
+    exchange_name: str
 
 
 class BrokerClient(ABC):

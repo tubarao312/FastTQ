@@ -1,6 +1,5 @@
-import asyncio
+import json
 import aioredis
-from typing import Callable, List
 
 from broker.core import BrokerClient
 
@@ -16,9 +15,10 @@ class RedisBroker(BrokerClient):
     - `subscribe`: Subscribe to multiple channels and handle incoming messages.
     """
 
-    def __init__(self, url: str):
-        self.url = url
+    def __init__(self, url: str, exchange: str):
         self.client = None
+        self.url = url
+        self.exchange = exchange
 
     async def connect(self) -> None:
         self.client = await aioredis.from_url(self.url)
@@ -26,17 +26,10 @@ class RedisBroker(BrokerClient):
     async def disconnect(self) -> None:
         await self.client.close()
 
-    async def subscribe(
-        self, channels: List[str], handler: Callable[[str, str], None]
-    ) -> None:
+    async def listen(self, queue: str):
         pubsub = self.client.pubsub()
-        await pubsub.subscribe(*channels)
+        await pubsub.subscribe(self.exchange + ":" + queue)
 
-        async def listener():
-            async for message in pubsub.listen():
-                if message["type"] == "message":
-                    channel = message["channel"].decode()
-                    data = message["data"].decode()
-                    await handler(channel, data)
-
-        asyncio.create_task(listener())
+        async for message in pubsub.listen():
+            if message["type"] == "message":
+                yield json.loads(message["data"])

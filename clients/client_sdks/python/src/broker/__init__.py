@@ -18,6 +18,6 @@ def create_broker_instance(config: BrokerConfig) -> BrokerClient:
     if config.url.startswith("amqp"):
         return RabbitMQBroker(config.url, config.exchange_name)
     elif config.url.startswith("redis"):
-        return RedisBroker(config.url)
+        return RedisBroker(config.url, config.exchange_name)
     else:
         raise ValueError(f"Unsupported broker URL: {config.url}")
