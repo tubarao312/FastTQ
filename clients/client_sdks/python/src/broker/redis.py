@@ -1,6 +1,7 @@
 import json
 import aioredis
 
+from broker.config import BrokerConfig
 from broker.core import BrokerClient
 
 
@@ -15,13 +16,13 @@ class RedisBroker(BrokerClient):
     - `subscribe`: Subscribe to multiple channels and handle incoming messages.
     """
 
-    def __init__(self, url: str, exchange: str):
+    def __init__(self, config: BrokerConfig, exchange: str):
         self.client = None
-        self.url = url
+        self.config = config
         self.exchange = exchange
 
     async def connect(self) -> None:
-        self.client = await aioredis.from_url(self.url)
+        self.client = await aioredis.from_url(self.config.url)
 
     async def disconnect(self) -> None:
         await self.client.close()
