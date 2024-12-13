@@ -114,6 +114,14 @@ class TaskInstance:
             TaskStatus.REJECTED,
         ]
 
+    @property
+    def has_completed(self) -> bool:
+        return self.status == TaskStatus.COMPLETED
+
+    @property
+    def has_failed(self) -> bool:
+        return self.status == TaskStatus.FAILED
+
     @staticmethod
     def from_dict(data: dict[str, Any]) -> "TaskInstance":
         """Creates a TaskInstance from a dictionary."""

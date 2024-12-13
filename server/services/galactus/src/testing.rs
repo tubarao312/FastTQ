@@ -52,6 +52,7 @@ pub mod test {
             _task_name: &str,
             _worker: &str,
             _message: &[u8],
+            _message_id: &str,
         ) -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }

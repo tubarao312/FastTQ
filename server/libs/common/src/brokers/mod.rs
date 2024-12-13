@@ -92,7 +92,12 @@ impl Broker {
 
         // Use task type as exchange, worker ID as routing key
         self.broker
-            .publish_message(&task.task_kind.name, &worker.id.to_string(), &payload)
+            .publish_message(
+                &task.task_kind.name,
+                &worker.id.to_string(),
+                &payload,
+                &task.id.to_string(),
+            )
             .await?;
 
         Ok(worker.id)
@@ -127,6 +132,7 @@ mod tests {
             _task_name: &str,
             _worker: &str,
             _message: &[u8],
+            _message_id: &str,
         ) -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }

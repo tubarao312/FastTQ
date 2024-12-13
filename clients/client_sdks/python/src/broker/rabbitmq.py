@@ -1,3 +1,4 @@
+import json
 from broker.config import BrokerConfig
 from broker.core import BrokerClient
 from aio_pika import connect_robust, ExchangeType
@@ -76,6 +77,6 @@ class RabbitMQBroker(BrokerClient):
 
         async for message in queue_instance.iterator():
             async with message.process():
-                yield message.body.decode()
+                yield json.loads(message.body.decode()), message.message_id
 
         await queue_instance.delete()

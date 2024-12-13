@@ -90,12 +90,13 @@ class WorkerApplication:
         if self._broker_client:
             await self._broker_client.disconnect()
 
-    async def _execute_task(self, kind: str, input_data: TaskInput):
+    async def _execute_task(self, kind: str, input_data: TaskInput, task_id: str):
         """Execute a task and update its status in the manager.
 
         Args:
             kind: Type of task to execute
             input_data: Input data for the task
+            task_id: Unique identifier for the task
 
         Raises:
             ValueError: If task kind is not registered
@@ -105,13 +106,16 @@ class WorkerApplication:
             raise ValueError(f"Task {kind} not registered.")
 
         try:
+            # Check what to do with the task result
             result = await task_func(input_data)
-            await self._manager_client.update_task_status(
-                kind, TaskStatus.COMPLETED, result
+            await self._manager_client.update_task_result(
+                task_id, result, is_error=False
             )
         except Exception as e:
-            await self._manager_client.update_task_status(kind, TaskStatus.FAILED)
             # Log the exception (could improve error handling)
+            await self._manager_client.update_task_result(
+                task_id, str(e), is_error=True
+            )
 
     async def _listen(self, kind: str):
         """Listen for tasks of a specific kind from the broker.
@@ -125,8 +129,8 @@ class WorkerApplication:
         if not self._broker_client:
             raise RuntimeError("Broker client is not initialized.")
 
-        async for input_data in self._broker_client.listen(kind):
-            await self._execute_task(kind, input_data)
+        async for input_data, task_id in self._broker_client.listen(kind):
+            await self._execute_task(kind, input_data, task_id)
 
     async def entrypoint(self):
         """Start the worker application.

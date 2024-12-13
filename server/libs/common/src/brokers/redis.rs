@@ -35,10 +35,19 @@ impl BrokerCore for RedisBroker {
         exchange: &str,
         routing_key: &str,
         payload: &[u8],
+        message_id: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let mut conn = self.client.get_multiplexed_async_connection().await?;
         let queue = format!("{}:{}", exchange, routing_key);
-        let result: RedisResult<()> = conn.publish(queue, payload).await;
+        let result: RedisResult<()> = conn
+            .publish(
+                queue,
+                &[
+                    ("task_id", message_id),
+                    ("payload", std::str::from_utf8(payload)?),
+                ],
+            )
+            .await;
 
         match result {
             Ok(_) => Ok(()),

@@ -75,6 +75,7 @@ impl BrokerCore for RabbitBroker {
         exchange: &str,
         routing_key: &str,
         payload: &[u8],
+        message_id: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let channel = self.connection.create_channel().await?;
 
@@ -84,7 +85,7 @@ impl BrokerCore for RabbitBroker {
                 routing_key,
                 BasicPublishOptions::default(),
                 payload,
-                BasicProperties::default(),
+                BasicProperties::default().with_message_id(message_id.into()),
             )
             .await?;
 
