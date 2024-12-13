@@ -9,15 +9,18 @@ from broker.rabbitmq import RabbitMQBroker
 def create_broker_instance(
     config: BrokerConfig, exchange_name: str, worker_id: str
 ) -> BrokerClient:
-    """Create a broker instance based on the configuration.
+    """Create appropriate broker client based on configuration.
 
-    ### Arguments
-    - `config`: The configuration for the broker.
-    - `exchange_name`: The name of the exchange.
-    - `worker_id`: Unique identifier for this worker.
+    Args:
+        config: Configuration for the broker connection
+        exchange_name: Name of the exchange to use
+        worker_id: Unique identifier for this worker instance
 
-    ### Returns
-    - `BrokerClient`: The broker instance.
+    Returns:
+        BrokerClient: Configured broker client instance
+
+    Raises:
+        ValueError: If broker URL scheme is not supported
     """
 
     if config.url.startswith("amqp"):

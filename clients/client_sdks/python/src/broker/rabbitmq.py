@@ -4,18 +4,15 @@ from aio_pika import connect_robust, ExchangeType
 
 
 class RabbitMQBroker(BrokerClient):
-    """A implementation of a broker using RabbitMQ.
+    """RabbitMQ implementation of the broker interface.
 
-    ### Attributes
-    - `url`: The URL of the RabbitMQ server.
-    - `exchange_name`: The name of the exchange.
-    - `connection`: The connection to the RabbitMQ server.
-    - `channel`: The channel to the RabbitMQ server.
-
-    ### Methods
-    - `connect`: Connect to the RabbitMQ server.
-    - `disconnect`: Disconnect from the RabbitMQ server.
-    - `listen`: Listen to a queue.
+    Attributes:
+        config (BrokerConfig): Configuration for connecting to RabbitMQ
+        exchange_name (str): Name of the primary exchange
+        worker_id (str): Unique identifier for this worker instance
+        connection: Active connection to RabbitMQ server
+        channel: Active channel for communication
+        exchange: Declared exchange for message routing
     """
 
     def __init__(self, config: BrokerConfig, exchange_name: str, worker_id: str):
@@ -24,6 +21,11 @@ class RabbitMQBroker(BrokerClient):
         self.worker_id = worker_id  # Add worker_id to identify this worker
 
     async def connect(self) -> None:
+        """Establish connection to RabbitMQ server and setup channel.
+
+        Raises:
+            ConnectionError: If connection to RabbitMQ fails
+        """
         self.connection = await connect_robust(
             self.config.url, login=self.config.username, password=self.config.password
         )
@@ -35,11 +37,23 @@ class RabbitMQBroker(BrokerClient):
         )
 
     async def disconnect(self) -> None:
+        """Clean up RabbitMQ resources and close connection."""
         # Remove the exchanges
         await self.channel.exchange_delete(self.exchange_name)
         await self.connection.close()
 
     async def listen(self, task_type: str):
+        """Listen for tasks of a specific type.
+
+        Args:
+            task_type: Type of tasks to listen for
+
+        Yields:
+            str: Decoded message body containing task data
+
+        Raises:
+            ConnectionError: If broker connection is lost
+        """
         # Use worker ID as queue name and routing key
         queue_instance = await self.channel.declare_queue(
             self.worker_id,  # Use worker ID as queue name

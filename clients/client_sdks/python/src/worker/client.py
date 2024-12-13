@@ -11,18 +11,14 @@ from worker.config import WorkerApplicationConfig
 
 @dataclass
 class WorkerApplication:
-    """A worker application that can execute tasks.
+    """A worker application that processes tasks from a task queue.
 
-    ### Attributes
-    - `_config`: The worker application configuration.
-    - `_tasks`: A dictionary of tasks that can be executed.
-
-    ### Methods
-    - `register_task`: Registers a task function for a specific kind.
-    - `task`: Decorator to register a task function for a specific kind.
-    - `_publish_result`: Publishes a result to the client.
-    - `_execute_task`: Executes a task for a specific kind with known data.
-    - `entrypoint`: Main entrypoint to start the worker application.
+    Attributes:
+        _config (WorkerApplicationConfig): Configuration for the worker application
+        _tasks (Dict[str, Callable]): Mapping of task kinds to their handler functions
+        _broker_client (Optional[BrokerClient]): Client for communicating with the message broker
+        _manager_client (ManagerClient): Client for communicating with the task manager
+        _id (Optional[str]): Unique identifier assigned by the manager
     """
 
     _config: WorkerApplicationConfig
@@ -40,22 +36,22 @@ class WorkerApplication:
     def register_task(
         self, kind: str, task: Callable[[TaskInput], Awaitable[TaskOutput]]
     ):
-        """Registers a task function for a specific kind.
+        """Register a task handler function for a specific task kind.
 
-        ### Arguments:
-        - `kind`: The kind of the task.
-        - `task`: The task function to be registered.
+        Args:
+            kind: Unique identifier for the task type
+            task: Async function that processes tasks of this kind
         """
         self._tasks[kind] = task
 
     def task(self, kind: str):
-        """Decorator to register a task function for a specific kind.
+        """Decorator for registering task handler functions.
 
-        ### Arguments:
-        - `kind`: The kind of the task.
+        Args:
+            kind: Unique identifier for the task type
 
-        ### Returns:
-        - A decorator to register a task function.
+        Returns:
+            Callable: Decorator function that registers the task handler
         """
 
         def decorator(task: Callable[[TaskInput], Awaitable[TaskOutput]]):
@@ -65,7 +61,11 @@ class WorkerApplication:
         return decorator
 
     async def _register_worker(self):
-        """Register the worker with the manager and set up the broker client."""
+        """Register this worker with the manager and initialize broker connection.
+
+        Raises:
+            ConnectionError: If connection to manager or broker fails
+        """
         worker = await self._manager_client.register_worker(
             self._config.name, list(self._tasks.keys())
         )
@@ -78,7 +78,11 @@ class WorkerApplication:
         await self._broker_client.connect()
 
     async def _unregister_worker(self):
-        """Unregister the worker with the manager and disconnect the broker client."""
+        """Unregister from the manager and clean up broker connection.
+
+        Raises:
+            ValueError: If worker is not registered
+        """
         if self._id is None:
             raise ValueError("Worker is not registered.")
 
@@ -87,7 +91,15 @@ class WorkerApplication:
             await self._broker_client.disconnect()
 
     async def _execute_task(self, kind: str, input_data: TaskInput):
-        """Execute a task and update its status asynchronously."""
+        """Execute a task and update its status in the manager.
+
+        Args:
+            kind: Type of task to execute
+            input_data: Input data for the task
+
+        Raises:
+            ValueError: If task kind is not registered
+        """
         task_func = self._tasks.get(kind)
         if task_func is None:
             raise ValueError(f"Task {kind} not registered.")
@@ -102,7 +114,14 @@ class WorkerApplication:
             # Log the exception (could improve error handling)
 
     async def _listen(self, kind: str):
-        """Listen for tasks from the broker and execute them."""
+        """Listen for tasks of a specific kind from the broker.
+
+        Args:
+            kind: Type of task to listen for
+
+        Raises:
+            RuntimeError: If broker client is not initialized
+        """
         if not self._broker_client:
             raise RuntimeError("Broker client is not initialized.")
 
@@ -110,7 +129,11 @@ class WorkerApplication:
             await self._execute_task(kind, input_data)
 
     async def entrypoint(self):
-        """Main entrypoint to start the worker application."""
+        """Start the worker application.
+
+        This method registers the worker, starts listening for tasks,
+        and handles graceful shutdown.
+        """
         await self._register_worker()
         try:
             await asyncio.gather(*[self._listen(kind) for kind in self._tasks.keys()])
