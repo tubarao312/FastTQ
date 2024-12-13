@@ -50,10 +50,6 @@ class WorkerApplication:
         self._id = None
 
         self._manager_client = ManagerClient(config.manager_config)
-
-        # For this ideally we would get the broker information from the manager
-        self._broker_client = create_broker_instance(config.broker_config, config.name)
-
         self._tasks = {}
 
     def register_task(
@@ -88,9 +84,13 @@ class WorkerApplication:
         worker = await self._manager_client.register_worker(
             self._config.name, list(self._tasks.keys())
         )
-        await self._broker_client.connect()
-
         self._id = worker
+
+        # For this ideally we would get the broker information from the manager
+        self._broker_client = create_broker_instance(
+            self._config.broker_config, self._config.name, str(self._id)
+        )
+        await self._broker_client.connect()
 
     async def _unregister_worker(self):
         """Unregister the worker with the manager and disconnect the broker client."""

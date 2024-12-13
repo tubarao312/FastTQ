@@ -46,9 +46,14 @@ impl Broker {
         &mut self,
         worker: Worker,
     ) -> Result<(), Box<dyn std::error::Error>> {
+        // Create a unique queue for this worker using its ID
+        let worker_queue = worker.id.to_string();
+
+        // For each task type this worker handles
         for task_kind in worker.task_kind.clone() {
+            // Use task type as exchange name, worker ID as both queue name and routing key
             self.broker
-                .register_queue(&task_kind.name, &task_kind.name, &worker.name)
+                .register_queue(&worker_queue, &task_kind.name, &worker_queue)
                 .await?;
         }
 
@@ -85,9 +90,9 @@ impl Broker {
         // Convert input data to bytes
         let payload = serde_json::to_vec(&task.input_data)?;
 
-        // Publish the task to the worker
+        // Use task type as exchange, worker ID as routing key
         self.broker
-            .publish_message(&task.task_kind.name, &worker.name, &payload)
+            .publish_message(&task.task_kind.name, &worker.id.to_string(), &payload)
             .await?;
 
         Ok(worker.id)

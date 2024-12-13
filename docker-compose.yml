@@ -4,14 +4,16 @@ volumes:
 
 services:
   fasttq:
-    build: 
+    build:
       context: .
       dockerfile: server/services/galactus/Dockerfile
     ports:
       - "3000:3000"
     depends_on:
-      - rabbitmq
-      - postgres
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     env_file:
       - server/services/galactus/.env.docker
 
@@ -25,7 +27,12 @@ services:
       RABBITMQ_DEFAULT_PASS: password
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   postgres:
     image: postgres:latest
     environment:
@@ -36,3 +43,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d fasttq"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

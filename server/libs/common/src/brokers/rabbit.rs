@@ -29,23 +29,34 @@ impl BrokerCore for RabbitBroker {
         routing_key: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let channel = self.connection.create_channel().await?;
+
+        // Create durable queue
         channel
             .queue_declare(
                 queue_name,
-                QueueDeclareOptions::default(),
+                QueueDeclareOptions {
+                    durable: true,
+                    auto_delete: false,
+                    ..QueueDeclareOptions::default()
+                },
                 FieldTable::default(),
             )
             .await?;
 
+        // Create durable exchange
         channel
             .exchange_declare(
                 exchange,
                 ExchangeKind::Direct,
-                ExchangeDeclareOptions::default(),
+                ExchangeDeclareOptions {
+                    durable: true,
+                    ..ExchangeDeclareOptions::default()
+                },
                 FieldTable::default(),
             )
             .await?;
 
+        // Bind using worker name as routing key
         channel
             .queue_bind(
                 queue_name,
