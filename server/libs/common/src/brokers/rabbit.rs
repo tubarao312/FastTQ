@@ -22,47 +22,17 @@ impl RabbitBroker {
 
 #[async_trait]
 impl BrokerCore for RabbitBroker {
-    async fn register_queue(
+    async fn register_exchange(
         &self,
-        queue_name: &str,
         exchange: &str,
-        routing_key: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let channel = self.connection.create_channel().await?;
 
-        // Create durable queue
-        channel
-            .queue_declare(
-                queue_name,
-                QueueDeclareOptions {
-                    durable: true,
-                    auto_delete: false,
-                    ..QueueDeclareOptions::default()
-                },
-                FieldTable::default(),
-            )
-            .await?;
-
-        // Create durable exchange
         channel
             .exchange_declare(
                 exchange,
                 ExchangeKind::Direct,
-                ExchangeDeclareOptions {
-                    durable: true,
-                    ..ExchangeDeclareOptions::default()
-                },
-                FieldTable::default(),
-            )
-            .await?;
-
-        // Bind using worker name as routing key
-        channel
-            .queue_bind(
-                queue_name,
-                exchange,
-                routing_key,
-                QueueBindOptions::default(),
+                ExchangeDeclareOptions::default(),
                 FieldTable::default(),
             )
             .await?;
@@ -70,6 +40,45 @@ impl BrokerCore for RabbitBroker {
         Ok(())
     }
 
+    async fn register_queue(
+        &self,
+        exchange: &str,
+        queue: &str,
+        routing_key: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let channel = self.connection.create_channel().await?;
+
+        channel
+            .queue_declare(
+                queue,
+                QueueDeclareOptions::default(),
+                FieldTable::default(),
+            )
+            .await?;
+
+        channel
+            .queue_bind(queue, exchange, routing_key, QueueBindOptions::default(), FieldTable::default())
+            .await?;
+
+        Ok(())
+    }
+
+    async fn delete_queue(&self, queue: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let channel = self.connection.create_channel().await?;
+
+        channel.queue_delete(queue, QueueDeleteOptions::default()).await?;
+
+        Ok(())
+    }
+
+    async fn delete_exchange(&self, exchange: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let channel = self.connection.create_channel().await?;
+
+        channel.exchange_delete(exchange, ExchangeDeleteOptions::default()).await?;
+
+        Ok(())
+    }
+    
     async fn publish_message(
         &self,
         exchange: &str,

@@ -148,7 +148,7 @@ async fn unregister_worker(
         })?;
 
     // Unregister from broker
-    state.broker.write().await.remove_worker(&id).map_err(|e| {
+    state.broker.write().await.remove_worker(&id).await.map_err(|e| {
         error!("Failed to unregister worker from broker: {:?}", e);
         (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -163,11 +163,11 @@ mod test {
     use super::*;
     use crate::{
         repo::{PgRepositoryCore, PgWorkerRepository},
-        testing::test::{get_mock_broker, get_test_server, init_test_logger},
+        testing::test::{get_test_server, init_test_logger},
     };
-    use common::{TaskKind, Worker};
-    use serde_json::json;
+    use common::{brokers::testing::get_mock_broker, TaskKind, Worker};
     use sqlx::PgPool;
+    use serde_json::json;
 
     // This runs before any test in this module
     #[ctor::ctor]

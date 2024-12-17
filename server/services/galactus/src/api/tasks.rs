@@ -308,6 +308,7 @@ async fn update_task_result(
 mod test {
     use axum::http::StatusCode;
     use common::{TaskInstance, TaskKind, Worker};
+    use common::brokers::testing::get_mock_broker;
     use serde_json::json;
     use sqlx::PgPool;
     use tracing::info;
@@ -317,8 +318,9 @@ mod test {
             PgRepositoryCore, PgTaskInstanceRepository, PgTaskKindRepository, PgWorkerRepository,
             TaskInstanceRepository, TaskKindRepository, WorkerRepository,
         },
-        testing::test::{get_mock_broker, get_test_server, init_test_logger},
+        testing::test::{get_test_server, init_test_logger},
     };
+
 
     // This runs before any test in this module
     #[ctor::ctor]
