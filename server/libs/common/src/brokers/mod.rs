@@ -1,10 +1,8 @@
 pub mod core;
 pub mod rabbit;
-pub mod redis;
 
 use core::BrokerCore;
 use rabbit::RabbitBroker;
-use redis::RedisBroker;
 use uuid::Uuid;
 
 use std::sync::Arc;
@@ -17,7 +15,6 @@ async fn create_broker_connection(
     let prefix = uri.split(":").collect::<Vec<&str>>()[0];
 
     match prefix {
-        "redis" => Ok(Arc::new(RedisBroker::new(uri).await?)),
         "amqp" => Ok(Arc::new(RabbitBroker::new(uri).await?)),
         _ => Err("Invalid broker URI".into()),
     }
@@ -205,14 +202,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_broker_connection() {
-        let uri = "redis://localhost".to_string();
+        let uri = "amqp://localhost".to_string();
         let broker = create_broker_connection(&uri).await;
         assert!(broker.is_ok());
     }
 
     #[tokio::test]
     async fn test_broker_new() {
-        let uri = "redis://localhost".to_string();
+        let uri = "amqp://localhost".to_string();
         let broker = Broker::new(&uri).await;
         assert!(broker.is_ok());
         let broker = broker.unwrap();
@@ -223,7 +220,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_broker_register_worker() {
-        let uri = "redis://localhost".to_string();
+        let uri = "amqp://localhost".to_string();
         let mut broker = Broker::new(&uri).await.unwrap();
         let workers = setup_workers(setup_task_kinds());
 
@@ -236,7 +233,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_broker_remove_worker() {
-        let uri = "redis://localhost".to_string();
+        let uri = "amqp://localhost".to_string();
         let mut broker = Broker::new(&uri).await.unwrap();
         let workers = setup_workers(setup_task_kinds());
 
@@ -250,7 +247,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_broker_publish() {
-        let uri = "redis://localhost".to_string();
+        let uri = "amqp://localhost".to_string();
         let task_kinds = setup_task_kinds();
         let workers = setup_workers(task_kinds.clone());
         let tasks = setup_tasks(task_kinds.clone());
@@ -269,7 +266,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_no_available_worker() {
-        let uri = "redis://localhost".to_string();
+        let uri = "amqp://localhost".to_string();
         let mut broker = Broker::new(&uri).await.unwrap();
         broker.broker = Arc::new(MockBroker {});
 

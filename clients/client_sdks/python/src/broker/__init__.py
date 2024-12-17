@@ -3,7 +3,6 @@ from broker.core import BrokerClient
 
 # TODO: Import only rabbit if tacoq[amqp] is installed
 from broker.rabbitmq import RabbitMQBroker
-# from broker.redis import RedisBroker
 
 
 def create_broker_instance(
@@ -25,7 +24,5 @@ def create_broker_instance(
 
     if config.url.startswith("amqp"):
         return RabbitMQBroker(config, exchange_name, worker_id)
-    elif config.url.startswith("redis"):
-        return RedisBroker(config, exchange_name, worker_id)
     else:
         raise ValueError(f"Unsupported broker URL: {config.url}")
