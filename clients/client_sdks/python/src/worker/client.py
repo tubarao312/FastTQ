@@ -22,7 +22,7 @@ class WorkerApplication:
     """
 
     _config: WorkerApplicationConfig
-    _tasks: Dict[str, Callable[[TaskInput], Awaitable[TaskOutput]]]
+    _registered_tasks: Dict[str, Callable[[TaskInput], Awaitable[TaskOutput]]]
     _broker_client: Optional[BrokerClient]
     _manager_client: ManagerClient
 
@@ -31,7 +31,7 @@ class WorkerApplication:
         self._id = None
 
         self._manager_client = ManagerClient(config.manager_config)
-        self._tasks = {}
+        self._registered_tasks = {}
 
     def register_task(
         self, kind: str, task: Callable[[TaskInput], Awaitable[TaskOutput]]
@@ -42,7 +42,7 @@ class WorkerApplication:
         - `kind`: Unique identifier for the task type
         - `task`: Async function that processes tasks of this kind
         """
-        self._tasks[kind] = task
+        self._registered_tasks[kind] = task
 
     def task(self, kind: str):
         """Decorator for registering task handler functions.
@@ -67,7 +67,7 @@ class WorkerApplication:
         - `ConnectionError`: If connection to manager or broker fails
         """
         worker = await self._manager_client.register_worker(
-            self._config.name, list(self._tasks.keys())
+            self._config.name, list(self._registered_tasks.keys())
         )
         self._id = worker
 
@@ -101,7 +101,7 @@ class WorkerApplication:
         ### Raises
         - `ValueError`: If task kind is not registered
         """
-        task_func = self._tasks.get(kind)
+        task_func = self._registered_tasks.get(kind)
         if task_func is None:
             raise ValueError(f"Task {kind} not registered.")
 

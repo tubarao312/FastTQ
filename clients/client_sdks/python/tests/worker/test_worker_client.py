@@ -1,14 +1,11 @@
 from worker import WorkerApplication
-from models.task import TaskStatus, TaskInstance
 from manager import ManagerClient
 import pytest
 from uuid import uuid4
 from builtins import anext
 
-TEST_TASK_KIND = str(uuid4())
 
-
-# Define a task that should fail and a task that works
+# Test Task Definitions. One will fail and one will complete successfully.
 async def failing_task(input_data):
     raise Exception("Task failed")
 
@@ -22,6 +19,7 @@ async def test_worker_startup_and_task_success(
     worker_application: WorkerApplication, manager_client: ManagerClient
 ):
     """Tests that a worker can start and successfully process a task."""
+    TEST_TASK_KIND = str(uuid4())
 
     # Start worker
     worker_application.register_task(TEST_TASK_KIND, successful_task)
@@ -54,6 +52,7 @@ async def test_worker_task_failure_handling(
     worker_application: WorkerApplication, manager_client: ManagerClient
 ):
     """Tests that a worker can properly handle and report task failures."""
+    TEST_TASK_KIND = str(uuid4())
 
     # Start worker
     worker_application.register_task(TEST_TASK_KIND, failing_task)

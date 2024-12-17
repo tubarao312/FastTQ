@@ -11,6 +11,12 @@ use crate::{Worker, TaskInstance, TaskStatus};
 #[derive(Clone)]
 pub struct MockBrokerCore;
 
+impl Default for MockBrokerCore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MockBrokerCore {
     pub fn new() -> Self {
         MockBrokerCore
