@@ -34,14 +34,10 @@ jobs:
           SQLX_OFFLINE: true
 
       - name: Commit changes if any
-        run: |
-          if [[ -n $(git status --porcelain) ]]; then
-            git config --global user.name 'GitHub Actions'
-            git config --global user.email 'actions@github.com'
-            git add .
-            git commit -m "chore: automatic formatting update"
-            git push
-          fi
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Format code and run clippy"
+          commit_options: "--no-gpg-sign"
 
   test:
     name: Docker build and test
