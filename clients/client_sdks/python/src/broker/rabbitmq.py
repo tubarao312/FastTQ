@@ -24,8 +24,8 @@ class RabbitMQBroker(BrokerClient):
     async def connect(self) -> None:
         """Establish connection to RabbitMQ server and setup channel.
 
-        Raises:
-            ConnectionError: If connection to RabbitMQ fails
+        ### Raises
+        - `ConnectionError`: If connection to RabbitMQ fails
         """
         self.connection = await connect_robust(
             self.config.url, login=self.config.username, password=self.config.password
@@ -46,14 +46,14 @@ class RabbitMQBroker(BrokerClient):
     async def listen(self, task_type: str):
         """Listen for tasks of a specific type.
 
-        Args:
-            task_type: Type of tasks to listen for
+        ### Parameters
+        - `task_type`: Type of tasks to listen for
 
-        Yields:
-            str: Decoded message body containing task data
+        ### Yields
+        - `str`: Decoded message body containing task data
 
-        Raises:
-            ConnectionError: If broker connection is lost
+        ### Raises
+        - `ConnectionError`: If broker connection is lost
         """
         # Use worker ID as queue name and routing key
         queue_instance = await self.channel.declare_queue(

@@ -10,16 +10,16 @@ def create_broker_instance(
 ) -> BrokerClient:
     """Create appropriate broker client based on configuration.
 
-    Args:
-        config: Configuration for the broker connection
-        exchange_name: Name of the exchange to use
-        worker_id: Unique identifier for this worker instance
+    ### Parameters
+    - `config`: Configuration for the broker connection
+    - `exchange_name`: Name of the exchange to use
+    - `worker_id`: Unique identifier for this worker instance
 
-    Returns:
-        BrokerClient: Configured broker client instance
+    ### Returns
+    - `BrokerClient`: Configured broker client instance
 
-    Raises:
-        ValueError: If broker URL scheme is not supported
+    ### Raises
+    - `ValueError`: If broker URL scheme is not supported
     """
 
     if config.url.startswith("amqp"):

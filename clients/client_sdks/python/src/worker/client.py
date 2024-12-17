@@ -4,7 +4,7 @@ from typing import Callable, Awaitable, Optional, Dict
 
 from broker import create_broker_instance, BrokerClient
 from manager import ManagerClient
-from models.task import TaskInput, TaskOutput, TaskStatus
+from models.task import TaskInput, TaskOutput
 
 from worker.config import WorkerApplicationConfig
 
@@ -38,20 +38,20 @@ class WorkerApplication:
     ):
         """Register a task handler function for a specific task kind.
 
-        Args:
-            kind: Unique identifier for the task type
-            task: Async function that processes tasks of this kind
+        ### Parameters
+        - `kind`: Unique identifier for the task type
+        - `task`: Async function that processes tasks of this kind
         """
         self._tasks[kind] = task
 
     def task(self, kind: str):
         """Decorator for registering task handler functions.
 
-        Args:
-            kind: Unique identifier for the task type
+        ### Parameters
+        - `kind`: Unique identifier for the task type
 
-        Returns:
-            Callable: Decorator function that registers the task handler
+        ### Returns
+        - `Callable`: Decorator function that registers the task handler
         """
 
         def decorator(task: Callable[[TaskInput], Awaitable[TaskOutput]]):
@@ -63,8 +63,8 @@ class WorkerApplication:
     async def _register_worker(self):
         """Register this worker with the manager and initialize broker connection.
 
-        Raises:
-            ConnectionError: If connection to manager or broker fails
+        ### Raises
+        - `ConnectionError`: If connection to manager or broker fails
         """
         worker = await self._manager_client.register_worker(
             self._config.name, list(self._tasks.keys())
@@ -80,8 +80,8 @@ class WorkerApplication:
     async def _unregister_worker(self):
         """Unregister from the manager and clean up broker connection.
 
-        Raises:
-            ValueError: If worker is not registered
+        ### Raises
+        - `ValueError`: If worker is not registered
         """
         if self._id is None:
             raise ValueError("Worker is not registered.")
@@ -93,13 +93,13 @@ class WorkerApplication:
     async def _execute_task(self, kind: str, input_data: TaskInput, task_id: str):
         """Execute a task and update its status in the manager.
 
-        Args:
-            kind: Type of task to execute
-            input_data: Input data for the task
-            task_id: Unique identifier for the task
+        ### Parameters
+        - `kind`: Type of task to execute
+        - `input_data`: Input data for the task
+        - `task_id`: Unique identifier for the task
 
-        Raises:
-            ValueError: If task kind is not registered
+        ### Raises
+        - `ValueError`: If task kind is not registered
         """
         task_func = self._tasks.get(kind)
         if task_func is None:
@@ -120,11 +120,11 @@ class WorkerApplication:
     async def _listen(self, kind: str):
         """Listen for tasks of a specific kind from the broker.
 
-        Args:
-            kind: Type of task to listen for
+        ### Parameters
+        - `kind`: Type of task to listen for
 
-        Raises:
-            RuntimeError: If broker client is not initialized
+        ### Raises
+        - `RuntimeError`: If broker client is not initialized
         """
         if not self._broker_client:
             raise RuntimeError("Broker client is not initialized.")
