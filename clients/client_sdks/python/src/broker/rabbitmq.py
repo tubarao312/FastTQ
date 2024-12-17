@@ -27,9 +27,7 @@ class RabbitMQBroker(BrokerClient):
         ### Raises
         - `ConnectionError`: If connection to RabbitMQ fails
         """
-        self.connection = await connect_robust(
-            self.config.url, login=self.config.username, password=self.config.password
-        )
+        self.connection = await connect_robust(self.config.url)
         self.channel = await self.connection.channel()
 
     async def disconnect(self) -> None:
@@ -48,9 +46,7 @@ class RabbitMQBroker(BrokerClient):
         """
         # The queue should have been created sucessfully on the gateway side
         # The queue name should be the id of the worker
-        queue_instance = await self.channel.declare_queue(
-            self.worker_id, durable=True
-        )
+        queue_instance = await self.channel.declare_queue(self.worker_id, durable=False)
 
         async for message in queue_instance.iterator():
             async with message.process():

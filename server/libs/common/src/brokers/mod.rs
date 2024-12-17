@@ -99,7 +99,7 @@ impl Broker {
                 &worker.id.to_string(),
                 &payload,
                 &task.id.to_string(),
-                &task.id.to_string(),
+                &task.task_kind.name,
             )
             .await?;
 

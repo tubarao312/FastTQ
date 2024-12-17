@@ -30,13 +30,13 @@ async def test_worker_startup_and_task_success(
         input_data = {"test": "data"}
         await manager_client.publish_task(TEST_TASK_KIND, input_data)
 
-        data, task_id = await anext(
-            worker_application._broker_client.listen(TEST_TASK_KIND)
+        data, task_id, task_kind = await anext(
+            worker_application._broker_client.listen()
         )
         assert input_data == data
 
         # This should execute the task with the given function
-        await worker_application._execute_task(TEST_TASK_KIND, data, task_id)
+        await worker_application._execute_task(task_kind, data, task_id)
 
         # # Process task successfully
         task = await manager_client.get_task(task_id)
@@ -63,13 +63,13 @@ async def test_worker_task_failure_handling(
         input_data = {"test": "data"}
         await manager_client.publish_task(TEST_TASK_KIND, input_data)
 
-        data, task_id = await anext(
-            worker_application._broker_client.listen(TEST_TASK_KIND)
+        data, task_id, task_kind = await anext(
+            worker_application._broker_client.listen()
         )
         assert input_data == data
 
         # This should execute the task with the given function
-        await worker_application._execute_task(TEST_TASK_KIND, data, task_id)
+        await worker_application._execute_task(task_kind, data, task_id)
 
         # Check that the task failed
         task = await manager_client.get_task(task_id)

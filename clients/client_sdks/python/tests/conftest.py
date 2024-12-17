@@ -36,7 +36,7 @@ async def manager_client(manager_config: ManagerConfig) -> ManagerClient:
 @pytest.fixture
 async def broker_config() -> BrokerConfig:
     """Fixture that provides a configured BrokerConfig instance."""
-    return BrokerConfig(url=BROKER_TEST_URL, username="user", password="password")
+    return BrokerConfig(url=BROKER_TEST_URL)
 
 
 @pytest.fixture
