@@ -107,7 +107,7 @@ impl Broker {
     }
 }
 
-// Change from #[cfg(test)] to pub mod
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -115,18 +115,11 @@ mod test {
     use crate::TaskStatus;
     use time::OffsetDateTime;
     use uuid::Uuid;
-    use std::sync::Arc;
-    use testing::{MockBrokerCore, setup_task_kinds, setup_tasks, setup_workers};
+    use testing::{setup_task_kinds, setup_tasks, setup_workers, get_mock_broker};
 
     #[tokio::test]
     async fn test_broker_new() {
-        let broker = Broker {
-            uri: "mock".to_string(),
-            broker: Arc::new(MockBrokerCore::new()),
-            workers: Vec::new(),
-            workers_index: 0,
-            submission_exchange: Broker::SUBMISSION_EXCHANGE,
-        };
+        let broker = get_mock_broker();
         assert_eq!(broker.uri, "mock");
         assert_eq!(broker.workers.len(), 0);
         assert_eq!(broker.workers_index, 0);
@@ -134,13 +127,7 @@ mod test {
 
     #[tokio::test]
     async fn test_broker_register_worker() {
-        let mut broker = Broker {
-            uri: "mock".to_string(),
-            broker: Arc::new(MockBrokerCore::new()),
-            workers: Vec::new(),
-            workers_index: 0,
-            submission_exchange: Broker::SUBMISSION_EXCHANGE,
-        };
+        let mut broker = get_mock_broker();
         let workers = setup_workers(setup_task_kinds());
 
         for worker in workers {
@@ -152,13 +139,7 @@ mod test {
 
     #[tokio::test]
     async fn test_broker_remove_worker() {
-        let mut broker = Broker {
-            uri: "mock".to_string(),
-            broker: Arc::new(MockBrokerCore::new()),
-            workers: Vec::new(),
-            workers_index: 0,
-            submission_exchange: Broker::SUBMISSION_EXCHANGE,
-        };
+        let mut broker = get_mock_broker();
         let workers = setup_workers(setup_task_kinds());
 
         for worker in workers.clone() {
@@ -175,13 +156,7 @@ mod test {
         let workers = setup_workers(task_kinds.clone());
         let tasks = setup_tasks(task_kinds.clone());
 
-        let mut broker = Broker {
-            uri: "mock".to_string(),
-            broker: Arc::new(MockBrokerCore::new()),
-            workers: Vec::new(),
-            workers_index: 0,
-            submission_exchange: Broker::SUBMISSION_EXCHANGE,
-        };
+        let mut broker = get_mock_broker();
 
         for worker in workers.clone() {
             broker.register_worker(worker).await.unwrap();
@@ -194,13 +169,7 @@ mod test {
 
     #[tokio::test]
     async fn test_no_available_worker() {
-        let mut broker = Broker {
-            uri: "mock".to_string(),
-            broker: Arc::new(MockBrokerCore::new()),
-            workers: Vec::new(),
-            workers_index: 0,
-            submission_exchange: Broker::SUBMISSION_EXCHANGE,
-        };
+        let mut broker = get_mock_broker();
 
         let workers = setup_workers(setup_task_kinds());
 
