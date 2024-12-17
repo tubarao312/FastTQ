@@ -1,7 +1,7 @@
 import json
 from broker.config import BrokerConfig
 from broker.core import BrokerClient
-from aio_pika import connect_robust, ExchangeType
+from aio_pika import connect_robust
 
 
 class RabbitMQBroker(BrokerClient):
@@ -32,22 +32,13 @@ class RabbitMQBroker(BrokerClient):
         )
         self.channel = await self.connection.channel()
 
-        # Mirror the backend's exchange setup
-        self.exchange = await self.channel.declare_exchange(
-            self.exchange_name, type=ExchangeType.DIRECT, durable=True
-        )
-
     async def disconnect(self) -> None:
-        """Clean up RabbitMQ resources and close connection."""
+        """Close RabbitMQ connection."""
         # Remove the exchanges
-        await self.channel.exchange_delete(self.exchange_name)
         await self.connection.close()
 
-    async def listen(self, task_type: str):
+    async def listen(self):
         """Listen for tasks of a specific type.
-
-        ### Parameters
-        - `task_type`: Type of tasks to listen for
 
         ### Yields
         - `str`: Decoded message body containing task data
@@ -55,28 +46,15 @@ class RabbitMQBroker(BrokerClient):
         ### Raises
         - `ConnectionError`: If broker connection is lost
         """
-        # Use worker ID as queue name and routing key
+        # The queue should have been created sucessfully on the gateway side
+        # The queue name should be the id of the worker
         queue_instance = await self.channel.declare_queue(
-            self.worker_id,  # Use worker ID as queue name
-            durable=True,
-            auto_delete=False,
-        )
-
-        # Create exchange for this task type
-        exchange = await self.channel.declare_exchange(
-            task_type,  # Use task type as exchange name
-            type=ExchangeType.DIRECT,
-            durable=True,
-        )
-
-        # Bind using worker ID as routing key
-        await queue_instance.bind(
-            exchange.name,
-            routing_key=self.worker_id,  # Use worker ID as routing key
+            self.worker_id, durable=True
         )
 
         async for message in queue_instance.iterator():
             async with message.process():
-                yield json.loads(message.body.decode()), message.message_id
+                task_kind = message.headers.get("task_kind")
+                yield json.loads(message.body.decode()), message.message_id, task_kind
 
         await queue_instance.delete()

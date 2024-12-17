@@ -117,11 +117,8 @@ class WorkerApplication:
                 task_id, str(e), is_error=True
             )
 
-    async def _listen(self, kind: str):
+    async def _listen(self):
         """Listen for tasks of a specific kind from the broker.
-
-        ### Parameters
-        - `kind`: Type of task to listen for
 
         ### Raises
         - `RuntimeError`: If broker client is not initialized
@@ -129,8 +126,8 @@ class WorkerApplication:
         if not self._broker_client:
             raise RuntimeError("Broker client is not initialized.")
 
-        async for input_data, task_id in self._broker_client.listen(kind):
-            await self._execute_task(kind, input_data, task_id)
+        async for input_data, task_id, task_kind in self._broker_client.listen():
+            await self._execute_task(task_kind, input_data, task_id)
 
     async def entrypoint(self):
         """Start the worker application.
@@ -140,7 +137,7 @@ class WorkerApplication:
         """
         await self._register_worker()
         try:
-            await asyncio.gather(*[self._listen(kind) for kind in self._tasks.keys()])
+            await self._listen
         except asyncio.CancelledError:
             pass
         finally:

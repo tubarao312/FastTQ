@@ -1,7 +1,7 @@
 use crate::brokers::core::BrokerCore;
 use async_trait::async_trait;
 use lapin::{
-    options::*, types::FieldTable, BasicProperties, Connection, ConnectionProperties, ExchangeKind,
+    options::*, types::{AMQPValue, FieldTable}, BasicProperties, Connection, ConnectionProperties, ExchangeKind,
 };
 use std::sync::Arc;
 
@@ -85,8 +85,13 @@ impl BrokerCore for RabbitBroker {
         routing_key: &str,
         payload: &[u8],
         message_id: &str,
+        task_id: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let channel = self.connection.create_channel().await?;
+        
+        // Initialize headers
+        let mut headers = FieldTable::default();
+        headers.insert("task_kind".into(), AMQPValue::LongString(task_id.into()));
 
         channel
             .basic_publish(
@@ -94,7 +99,7 @@ impl BrokerCore for RabbitBroker {
                 routing_key,
                 BasicPublishOptions::default(),
                 payload,
-                BasicProperties::default().with_message_id(message_id.into()),
+                BasicProperties::default().with_message_id(message_id.into()).with_headers(headers),
             )
             .await?;
 

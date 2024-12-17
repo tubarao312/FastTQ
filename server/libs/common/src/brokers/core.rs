@@ -24,5 +24,6 @@ pub trait BrokerCore: Send + Sync {
         routing_key: &str,
         payload: &[u8],
         message_id: &str,
+        task_id: &str,
     ) -> Result<(), Box<dyn std::error::Error>>;
 }

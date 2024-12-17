@@ -49,6 +49,7 @@ impl BrokerCore for MockBrokerCore {
         _: &str,
         _: &[u8],
         _: &str,
+        _: &str,
     ) -> Result<(), Box<dyn std::error::Error>> {
         Ok(())
     }

@@ -13,6 +13,6 @@ class BrokerClient(ABC):
         pass
 
     @abstractmethod
-    async def listen(self, queue: str) -> None:
-        """Listen to a specific queue."""
+    async def listen(self) -> None:
+        """Listen to the worker queue."""
         pass
