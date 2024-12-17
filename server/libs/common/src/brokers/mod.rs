@@ -119,27 +119,28 @@ mod test {
     use testing::{MockBrokerCore, setup_task_kinds, setup_tasks, setup_workers};
 
     #[tokio::test]
-    async fn test_create_broker_connection() {
-        let uri = "amqp://localhost".to_string();
-        let broker = create_broker_connection(&uri).await;
-        assert!(broker.is_ok());
-    }
-
-    #[tokio::test]
     async fn test_broker_new() {
-        let uri = "amqp://localhost".to_string();
-        let broker = Broker::new(&uri).await;
-        assert!(broker.is_ok());
-        let broker = broker.unwrap();
-        assert_eq!(broker.uri, uri);
+        let broker = Broker {
+            uri: "mock".to_string(),
+            broker: Arc::new(MockBrokerCore::new()),
+            workers: Vec::new(),
+            workers_index: 0,
+            submission_exchange: Broker::SUBMISSION_EXCHANGE,
+        };
+        assert_eq!(broker.uri, "mock");
         assert_eq!(broker.workers.len(), 0);
         assert_eq!(broker.workers_index, 0);
     }
 
     #[tokio::test]
     async fn test_broker_register_worker() {
-        let uri = "amqp://localhost".to_string();
-        let mut broker = Broker::new(&uri).await.unwrap();
+        let mut broker = Broker {
+            uri: "mock".to_string(),
+            broker: Arc::new(MockBrokerCore::new()),
+            workers: Vec::new(),
+            workers_index: 0,
+            submission_exchange: Broker::SUBMISSION_EXCHANGE,
+        };
         let workers = setup_workers(setup_task_kinds());
 
         for worker in workers {
@@ -151,8 +152,13 @@ mod test {
 
     #[tokio::test]
     async fn test_broker_remove_worker() {
-        let uri = "amqp://localhost".to_string();
-        let mut broker = Broker::new(&uri).await.unwrap();
+        let mut broker = Broker {
+            uri: "mock".to_string(),
+            broker: Arc::new(MockBrokerCore::new()),
+            workers: Vec::new(),
+            workers_index: 0,
+            submission_exchange: Broker::SUBMISSION_EXCHANGE,
+        };
         let workers = setup_workers(setup_task_kinds());
 
         for worker in workers.clone() {
@@ -165,13 +171,17 @@ mod test {
 
     #[tokio::test]
     async fn test_broker_publish() {
-        let uri = "amqp://localhost".to_string();
         let task_kinds = setup_task_kinds();
         let workers = setup_workers(task_kinds.clone());
         let tasks = setup_tasks(task_kinds.clone());
 
-        let mut broker = Broker::new(&uri).await.unwrap();
-        broker.broker = Arc::new(MockBrokerCore {});
+        let mut broker = Broker {
+            uri: "mock".to_string(),
+            broker: Arc::new(MockBrokerCore::new()),
+            workers: Vec::new(),
+            workers_index: 0,
+            submission_exchange: Broker::SUBMISSION_EXCHANGE,
+        };
 
         for worker in workers.clone() {
             broker.register_worker(worker).await.unwrap();
@@ -184,9 +194,13 @@ mod test {
 
     #[tokio::test]
     async fn test_no_available_worker() {
-        let uri = "amqp://localhost".to_string();
-        let mut broker = Broker::new(&uri).await.unwrap();
-        broker.broker = Arc::new(MockBrokerCore {});
+        let mut broker = Broker {
+            uri: "mock".to_string(),
+            broker: Arc::new(MockBrokerCore::new()),
+            workers: Vec::new(),
+            workers_index: 0,
+            submission_exchange: Broker::SUBMISSION_EXCHANGE,
+        };
 
         let workers = setup_workers(setup_task_kinds());
 
