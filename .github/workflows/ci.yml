@@ -14,6 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          # token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -33,15 +36,12 @@ jobs:
         env:
           SQLX_OFFLINE: true
 
-      - name: Commit changes if any
-        run: |
-          if [[ -n $(git status --porcelain) ]]; then
-            git config --global user.name 'GitHub Actions'
-            git config --global user.email 'actions@github.com'
-            git add .
-            git commit -m "chore: automatic formatting update"
-            git push
-          fi
+      # Uncomment the following lines if you want to commit the changes, TOOD: add token to repo secrets
+      # - name: Commit changes if any
+      #   uses: stefanzweifel/git-auto-commit-action@v5
+      #   with:
+      #     commit_message: "chore: format code and run clippy"
+      #     commit_options: "--no-gpg-sign"
 
   test:
     name: Docker build and test

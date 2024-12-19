@@ -1,17 +1,28 @@
-from dataclasses import dataclass
+from broker.config import BrokerConfig
+from broker.core import BrokerClient
+
+# TODO: Import only rabbit if tacoq[amqp] is installed
+from broker.rabbitmq import RabbitMQBroker
 
 
-@dataclass
-class BrokerConfig:
-    """Configuration for a broker."""
+def create_broker_instance(
+    config: BrokerConfig, exchange_name: str, worker_id: str
+) -> BrokerClient:
+    """Create appropriate broker client based on configuration.
 
-    url: str
+    ### Parameters
+    - `config`: Configuration for the broker connection
+    - `exchange_name`: Name of the exchange to use
+    - `worker_id`: Unique identifier for this worker instance
 
+    ### Returns
+    - `BrokerClient`: Configured broker client instance
 
-class Broker:
-    """A broker that can send and receive tasks."""
+    ### Raises
+    - `ValueError`: If broker URL scheme is not supported
+    """
 
-    config: BrokerConfig
-
-    # TODO - Figure out which functions a broker should have.
-    # TODO - Add a RabbitMQ and a Redis broker implementation.
+    if config.url.startswith("amqp"):
+        return RabbitMQBroker(config, exchange_name, worker_id)
+    else:
+        raise ValueError(f"Unsupported broker URL: {config.url}")
