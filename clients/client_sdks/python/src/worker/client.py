@@ -13,12 +13,21 @@ from worker.config import WorkerApplicationConfig
 class WorkerApplication:
     """A worker application that processes tasks from a task queue.
 
-    Attributes:
-        _config (WorkerApplicationConfig): Configuration for the worker application
-        _tasks (Dict[str, Callable]): Mapping of task kinds to their handler functions
-        _broker_client (Optional[BrokerClient]): Client for communicating with the message broker
-        _manager_client (ManagerClient): Client for communicating with the task manager
-        _id (Optional[str]): Unique identifier assigned by the manager
+    ### Attributes
+    - `_config`: Configuration for the worker application
+    - `_tasks`: Mapping of task kinds to their handler functions
+    - `_broker_client`: Client for communicating with the message broker
+    - `_manager_client`: Client for communicating with the task manager
+    - `_id`: Unique identifier assigned by the manager
+
+    ### Methods
+    - `register_task`: Register a task handler function for a specific task kind
+    - `task`: Decorator for registering task handler functions
+    - `_register_worker`: Register this worker with the manager and initialize broker connection
+    - `_unregister_worker`: Unregister from the manager and clean up broker connection
+    - `_execute_task`: Execute a task and update its status in the manager
+    - `_listen`: Listen for tasks of a specific kind from the broker
+    - `entrypoint`: Start the worker application
     """
 
     _config: WorkerApplicationConfig
@@ -44,7 +53,7 @@ class WorkerApplication:
         """
         self._registered_tasks[kind] = task
 
-    def task(self, kind: str):
+    def task(self, kind: str) -> Callable[[TaskInput], Awaitable[TaskOutput]]:
         """Decorator for registering task handler functions.
 
         ### Parameters

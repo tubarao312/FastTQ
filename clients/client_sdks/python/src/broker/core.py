@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import AsyncGenerator, Tuple
 
 
 class BrokerClient(ABC):
@@ -13,6 +14,6 @@ class BrokerClient(ABC):
         pass
 
     @abstractmethod
-    async def listen(self) -> None:
+    async def listen(self) -> AsyncGenerator[Tuple[str, str, str], None]:
         """Listen to the worker queue."""
         pass

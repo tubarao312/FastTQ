@@ -1,4 +1,5 @@
 import json
+from typing import AsyncGenerator, Tuple
 from broker.config import BrokerConfig
 from broker.core import BrokerClient
 from aio_pika import connect_robust
@@ -35,7 +36,7 @@ class RabbitMQBroker(BrokerClient):
         # Remove the exchanges
         await self.connection.close()
 
-    async def listen(self):
+    async def listen(self) -> AsyncGenerator[Tuple[str, str, str], None]:
         """Listen for tasks of a specific type.
 
         ### Yields
